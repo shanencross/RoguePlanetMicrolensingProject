@@ -94,7 +94,4 @@ do NOT observe!
 
 sigma(tMax) = 0.00 UT, sigma(tE) = 0.00 days
 
-.7 magnitude error bar cut-off
-
-
 """
