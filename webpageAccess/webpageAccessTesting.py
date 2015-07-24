@@ -10,7 +10,6 @@ import sys #not needed, used for debugging (e.g. calling exit())
 import os #for file-handling
 import logging
 import loggerSetup
-from datetime import datetime #for formatted date in log filename
 import requests #for fetching webpages
 requests.packages.urllib3.disable_warnings() #to disable warnings when accessing insecure sites
 from bs4 import BeautifulSoup #html parsing
@@ -41,7 +40,7 @@ MIN_MAG = 17.5 #magnitude units - only check events as bright or brighter than t
 			   #(i.e. numerically more negative values)
 
 #setup URL paths for website event index and individual pages
-WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert2015/display.php?id=gb9-R-1-96634"
+WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert2015/"
 INDEX_URL_DIR= "/index.dat"
 INDEX_URL = WEBSITE_URL + INDEX_URL_DIR
 EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id number attached to end
