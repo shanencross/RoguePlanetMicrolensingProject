@@ -51,33 +51,39 @@ def main():
 	#get index.dat text from website, which lists events
 	indexRequest = requests.get(INDEX_URL, verify=False)
 	index = indexRequest.content.splitlines()
-	#newest event from server, to be written to file
+	#latest server event, to be written to local file if necessary
 	newestEvent = index[-1]
 
-	#if file does not already exist, open for writing
+	#if file does not already exist, write newest event to file
 	if not os.path.isfile(EVENT_FILEPATH):
 		with open(EVENT_FILEPATH, 'w') as eventFile:
 			eventFile.write(newestEvent)
 		evaluateEvent(newestEvent.split())
 
-	#if file already exists, open for writing and reading (overwrites file when 
 	else:
+		#open event file fir reading and writing
 		with open(EVENT_FILEPATH, 'r+') as eventFile:
 			localEvent = eventFile.read()
-			#overwrite old local event with newest event after reading
-			eventFile.seek(0)
-			eventFile.write(newestEvent)
-			eventFile.truncate()
-
-		#check over new events, evaluating each for observation triggering
-		checkEvents(localEvent.split(), index)	
+			#overwrite old local event with newest event after reading if updated is needed
+			if newestEvent != localEvent:
+				eventFile.seek(0)
+				eventFile.write(newestEvent)
+				eventFile.truncate()
+		if newestEvent != localEvent:
+			#check over new events, evaluating each for observation triggering
+			checkEvents(localEvent, index)
+		else:
+			logger.info("No new or updated events. Local file is up to date.")
 
 #check over new events, evaluating each for observatoin triggering
-def checkEvents(localEventSplit, index):
+def checkEvents(localEvent, index):
+	localEventSplit = localEvent.split()
 	newestEventSplit = index[-1].split()
 	#check that event line has enough elements to have name listed
 	if len(localEventSplit) > NAME_INDEX:
 			localEventName = localEventSplit[NAME_INDEX]
+			newestEventName = newestEventSplit[NAME_INDEX]
+
 			#iterate backwards from last server event over
 			#preceding events
 			i = -1
