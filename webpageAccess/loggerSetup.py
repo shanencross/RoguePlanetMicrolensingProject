@@ -28,8 +28,8 @@ def setup(loggerName, logDir, logName, logDateTimeFormat):
 	consoleHandler.setLevel(logging.DEBUG)
 
 	#set up log format
-	fileFormatter = logging.Formatter(fmt="%(asctime)s - %(message)s")
-	consoleFormatter = logging.Formatter(fmt="%(message)s")
+	fileFormatter = logging.Formatter(fmt="%(asctime)s - %(levelname)s - %(message)s")
+	consoleFormatter = logging.Formatter(fmt="%(levelname)s - %(message)s")
 	fileHandler.setFormatter(fileFormatter)
 	consoleHandler.setFormatter(consoleFormatter)
 	

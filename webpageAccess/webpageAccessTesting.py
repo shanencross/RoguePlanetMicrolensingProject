@@ -38,6 +38,7 @@ BASELINE_MAG_INDEX = 7
 MAX_EINSTEIN_TIME = 3 #days - only check events as short or shorter than this
 MIN_MAG = 17.5 #magnitude units - only check events as bright or brighter than this 
 			   #(i.e. numerically more negative values)
+MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 
 #setup URL paths for website event index and individual pages
 WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert2015/"
@@ -47,6 +48,9 @@ EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id num
 
 def main():
 	logger.info("Storing newest event in: " + EVENT_FILEPATH)
+	logger.info("Max Einstein Time allowed: " + str(MAX_EINSTEIN_TIME) + " days")
+	logger.info("Dimmest magnitude allowed: " + str(MIN_MAG))
+	logger.info("Max magintude error allowed: " + str(MAX_MAG_ERR))
 
 	#get index.dat text from website, which lists events
 	indexRequest = requests.get(INDEX_URL, verify=False)
@@ -154,23 +158,33 @@ def isMicrolensing(eventPageSoup):
 
 #check if magnitude is bright enough for observation
 def checkMag(eventPageSoup):
-	#best way to access magnitude from html?
-	#mag = float(eventPageSoup.find(string="(arcsecs)").next_element.contents[1].string.split()[0])
-
-	#Magnitude is 0th word in table 3, row 6, column 1 (zero-based numbering)
-	mag = float(eventPageSoup.find_all("table")[3].find_all('tr')[6].find_all('td')[1].string.split()[0])
+	#Each magnitude is 0th word in table 3, row i, column 1 (zero-based numbering),
+	#where i ranges from 2 through 6 (inclusive). Mag from row i=6 is most recent.
+	magTable = eventPageSoup.find_all("table")[3]
+	magFound = False
+	for i in xrange(6, 1, -1):
+		magStringSplit = magTable.find_all('tr')[i].find_all('td')[1].string.split()
+		mag = float(magStringSplit[0])
+		magErr = float(magStringSplit[2])
+		logger.debug("Current magnitude: " + str(mag))
+		logger.debug("Current magnitude error: " + str(magErr))
+		if (magErr <= MAX_MAG_ERR):
+			magErrTooLarge = False
+			logger.debug("Magnitude error is NOT too large")
+			break
+		else:
+			magErrTooLarge = True
+			logger.debug("Current magnitude error is too large")
+	
 	logger.info("Magnitude: " + str(mag))
-	#more negative mags are brighter, so we want values less than
-	#our minimum brightness magnitude
-	if mag <= MIN_MAG:
-		return True
-	else:
-		return False
+	logger.info("Magnitude error: " + str(magErr))
 
-"""
-def getDiscoveryDate(eventPageSoup):
-	discoveryDateString = eventPageSoup.find(string="Discovery date:").next_element.string
-"""
+	#more negative mags are brighter, so we want values less than
+	#our minimum brightness magnitude	
+	if mag > MIN_MAG or magErrTooLarge:
+		return False
+	else:
+		return True
 
 if __name__ == "__main__":
 	main()

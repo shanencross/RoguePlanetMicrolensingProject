@@ -53,7 +53,28 @@ print
 #Current system time in UTC
 nowUTC = datetime.utcnow()
 print nowUTC
+print
 
+MAG_MAX_ERROR = 0.7
+magTable = soup.find_all("table")[3]
+magFound = False
+for i in xrange(6, 1, -1):
+	magStringSplit = magTable.find_all('tr')[i].find_all('td')[1].string.split()
+	mag = float(magStringSplit[0])
+	magErr = float(magStringSplit[2])
+	print "Mag:", mag
+	print "Mag error:", magErr
+
+	if (magErr <= MAG_MAX_ERROR):
+		magErrTooLarge = False
+		break
+	else:
+		magErrTooLarge = True
+
+print "Final mag:", mag
+print "Final mag error:", magErr
+
+print "Mag error too large:", magErrTooLarge
 """
 Pseudocode:
 #after passing other tests for triggering observation
