@@ -18,7 +18,8 @@ from astropy.time import Time #not used yet, may need eventually for manipulatin
 #create and set up filepath and directory for logs
 LOG_DIR = "./logs/"
 LOG_NAME = "webpageAccessTestingLog"
-LOG_DATE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
+#LOG_DATE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
+LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 #set up filepath and directory for local copy of newest microlensing event
@@ -47,6 +48,8 @@ INDEX_URL = WEBSITE_URL + INDEX_URL_DIR
 EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id number attached to end
 
 def main():
+	logger.info("---------------------------------------")
+	logger.info("Starting program")
 	logger.info("Storing newest event in: " + EVENT_FILEPATH)
 	logger.info("Max Einstein Time allowed: " + str(MAX_EINSTEIN_TIME) + " days")
 	logger.info("Dimmest magnitude allowed: " + str(MIN_MAG))
@@ -78,6 +81,8 @@ def main():
 			checkEvents(localEvent, index)
 		else:
 			logger.info("No new or updated events. Local file is up to date.")
+	logger.info("Ending program")
+	logger.info("---------------------------------------")
 
 #check over new events, evaluating each for observatoin triggering
 def checkEvents(localEvent, index):

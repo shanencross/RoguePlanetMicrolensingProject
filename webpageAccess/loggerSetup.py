@@ -12,7 +12,7 @@ def setup(loggerName, logDir, logName, logDateTimeFormat):
 
 	#create logger and construct filepath
 	logger = logging.getLogger(loggerName)
-	logDateTime = datetime.now().strftime(logDateTimeFormat)
+	logDateTime = datetime.utcnow().strftime(logDateTimeFormat)
 	logFilename = logName + "_" + logDateTime + ".log"
 	logFilepath = os.path.join(logDir, logFilename)
 
