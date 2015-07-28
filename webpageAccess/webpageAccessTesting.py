@@ -15,16 +15,16 @@ requests.packages.urllib3.disable_warnings() #to disable warnings when accessing
 from bs4 import BeautifulSoup #html parsing
 from astropy.time import Time #not used yet, may need eventually for manipulating dates
 
-#create and set up filepath and directory for logs
-LOG_DIR = "./logs/"
+#create and set up filepath and directory for logs -
+#log dir is subdir of script
+LOG_DIR = os.path.join(sys.path[0], "logs")
 LOG_NAME = "webpageAccessTestingLog"
-#LOG_DATE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 #set up filepath and directory for local copy of newest microlensing event
 EVENT_FILENAME = "lastEvent.txt"
-EVENT_DIR = "./lastEvent/"
+EVENT_DIR = os.path.join(sys.path[0], "lastEvent")
 EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
