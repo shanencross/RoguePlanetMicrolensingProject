@@ -1,5 +1,5 @@
 """
-loggerSetupTesting.py
+loggerSetup.py
 Purpose: Set up logger for webpageAccessTesting.py
 Author: Shanen Cross
 Date: 2015-07-28
