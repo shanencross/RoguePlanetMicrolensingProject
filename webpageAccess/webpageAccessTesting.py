@@ -9,7 +9,7 @@ Date: 2015-07-28
 import sys #not needed, used for debugging (e.g. calling exit())
 import os #for file-handling
 import logging
-import loggerSetup
+import loggerSetupTesting
 import requests #for fetching webpages
 requests.packages.urllib3.disable_warnings() #to disable warnings when accessing insecure sites
 from bs4 import BeautifulSoup #html parsing
@@ -21,7 +21,7 @@ import mailAlert #for sending email alerts
 LOG_DIR = os.path.join(sys.path[0], "logsTesting")
 LOG_NAME = "webpageAccessTestingLog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
-logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
+logger = loggerSetupTesting.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 #set up filepath and directory for local copy of newest microlensing event
 EVENT_FILENAME = "lastEvent.txt"
@@ -49,7 +49,7 @@ MIN_MAG = 17.5 #magnitude units - only check events as bright or brighter than t
 MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 
 #Flag for mail alerts functionality and list of mailing addresses
-MAIL_ALERTS_ON = True
+MAIL_ALERTS_ON = False
 MAILING_LIST = [ 'shanencross@gmail.com' ]
 
 def main():
@@ -66,24 +66,25 @@ def main():
 	#latest server event, to be written to local file if necessary
 	newestEvent = index[-1]
 
-	#if file does not already exist, write newest event to file
+	#if file does not already exist,check and evaluate all events
 	if not os.path.isfile(EVENT_FILEPATH):
+		localEvent = ""
+		checkEvents(localEvent, index)
 		with open(EVENT_FILEPATH, 'w') as eventFile:
 			eventFile.write(newestEvent)
-		evaluateEvent(newestEvent.split())
 
 	else:
 		#open event file fir reading and writing
-		with open(EVENT_FILEPATH, 'r+') as eventFile:
+		with open(EVENT_FILEPATH, 'r') as eventFile:
 			localEvent = eventFile.read()
-			#overwrite old local event with newest event after reading if updated is needed
-			if newestEvent != localEvent:
-				eventFile.seek(0)
-				eventFile.write(newestEvent)
-				eventFile.truncate()
 		if newestEvent != localEvent:
 			#check over new events, evaluating each for observation triggering
 			checkEvents(localEvent, index)
+			#overwrite old local event with newest event after reading if updated is needed
+			with open(EVENT_FILEPATH, 'w') as eventFile:
+				#eventFile.seek(0)
+				eventFile.write(newestEvent)
+				#eventFile.truncate()
 		else:
 			logger.info("No new or updated events. Local file is up to date.")
 	logger.info("Ending program")
@@ -95,23 +96,24 @@ def checkEvents(localEvent, index):
 	newestEventSplit = index[-1].split()
 	#check that event line has enough elements to have name listed
 	if len(localEventSplit) > NAME_INDEX:
-			localEventName = localEventSplit[NAME_INDEX]
-			newestEventName = newestEventSplit[NAME_INDEX]
+		localEventName = localEventSplit[NAME_INDEX]
+	else:
+		localEventName = ""
+	newestEventName = newestEventSplit[NAME_INDEX]
 
-			#iterate backwards from last server event over
-			#preceding events
-			i = -1
-			currentEventName = newestEventSplit[NAME_INDEX];
-			for currentEvent in reversed(index):
-				currentEventSplit = currentEvent.split()
-				currentEventName = currentEventSplit[NAME_INDEX]
-				#stop looping if we reach a server event that matches the local event
-				if currentEventName == localEventName:
-					logger.info("")
-					logger.info("Match found! Event: " + currentEventName)
-					break
-				#evaluate current event for observation triggering
-				evaluateEvent(currentEventSplit)
+	#iterate backwards from last server event over
+	#preceding events
+	currentEventName = newestEventSplit[NAME_INDEX];
+	for currentEvent in reversed(index):
+		currentEventSplit = currentEvent.split()
+		currentEventName = currentEventSplit[NAME_INDEX]
+		#stop looping if we reach a server event that matches the local event
+		if currentEventName == localEventName:
+			logger.info("")
+			logger.info("Match found! Event: " + currentEventName)
+			break
+		#evaluate current event for observation triggering
+		evaluateEvent(currentEventSplit)
 
 #evaluate whether event is short enough to potentially indicate a rogue planet
 #and whether it is bright enough to be worth further observation
@@ -152,11 +154,11 @@ def checkEinsteinTime(splitEvent):
 
 #get BeautifulSoup object representing HTML page for event page
 def getEventPageSoup(splitEvent):
-		eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
-		eventPageRequest = request = requests.get(eventPageURL, verify=False)
-		eventPage = eventPageRequest.content
-		eventPageSoup = BeautifulSoup(eventPage, 'lxml')
-		return eventPageSoup
+	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
+	eventPageRequest = request = requests.get(eventPageURL, verify=False)
+	eventPage = eventPageRequest.content
+	eventPageSoup = BeautifulSoup(eventPage, 'lxml')
+	return eventPageSoup
 
 #check if event is microlensing, cv, a combination of the two, or unknown
 #Should this return true or false if event is "microlensing/cv" (currently returns true)?
@@ -169,18 +171,23 @@ def isMicrolensing(eventPageSoup):
 	else:
 		return False
 
-#check if magnitude is bright enough for observation
-def checkMag(eventPageSoup):
-	#Each magnitude is 0th word in table 3, row i, column 1 (zero-based numbering),
-	#where i ranges from 2 through 6 (inclusive). Mag from row i=6 is most recent.
+#return magnitude and error of last photometry measurement whose error is not too large -
+#if all found values are too large, returns false boolean as well
+def getMag(eventPageSoup):
+	#Each magnitude is word 0 of string in table 3, row i, column 1 (zero-based numbering),
+	#where i ranges from 2 through len(rows)-1 (inclusive).
+	#Each error is word 1 of the same string.
 	magTable = eventPageSoup.find_all("table")[3]
-	magFound = False
-	for i in xrange(6, 1, -1):
-		magStringSplit = magTable.find_all('tr')[i].find_all('td')[1].string.split()
+	rows = magTable.find_all('tr')
+	#Iterate backwards over magnitudes starting from the most recent,
+	#skipping over ones with too large errors
+	for i in xrange(len(rows)-1, 1, -1):
+		magStringSplit = rows[i].find_all('td')[1].string.split()
 		mag = float(magStringSplit[0])
 		magErr = float(magStringSplit[2])
 		logger.debug("Current magnitude: " + str(mag))
 		logger.debug("Current magnitude error: " + str(magErr))
+		#Check if error exceeds max error allowed, and break out of loop if not.
 		if (magErr <= MAX_MAG_ERR):
 			magErrTooLarge = False
 			logger.debug("Magnitude error is NOT too large")
@@ -188,7 +195,18 @@ def checkMag(eventPageSoup):
 		else:
 			magErrTooLarge = True
 			logger.debug("Current magnitude error is too large")
-	
+	#If magnitude error is still too large after loop ends (without a break),
+	#magErrTooLarge will be True.
+	return [mag, magErr, magErrTooLarge]
+
+#check if magnitude is bright enough for observation
+def checkMag(eventPageSoup):
+	#get magnitude, error, and whether error is too large
+	magList = getMag(eventPageSoup)
+	#logger.debug("Returned mag array: " + str(magList))
+	mag = magList[0]
+	magErr = magList[1]
+	magErrTooLarge = magList[2]
 	logger.info("Magnitude: " + str(mag))
 	logger.info("Magnitude error: " + str(magErr))
 
