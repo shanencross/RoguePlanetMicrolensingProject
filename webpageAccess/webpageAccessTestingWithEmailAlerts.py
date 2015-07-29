@@ -1,9 +1,9 @@
 """
-webpageAccesTesting.py
+webpageAccesTestingWithEmailAlerts.py
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2015-07-22
+Date: 2015-07-28
 """
 
 import sys #not needed, used for debugging (e.g. calling exit())
@@ -199,13 +199,14 @@ def checkMag(eventPageSoup):
 def sendEmailAlert(splitEvent):
 	emailSubject = splitEvent[NAME_INDEX] + " - Short Duration Microlensing Event Alert"
 	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
-	messageText = """\
-				  Short Duration Microlensing Event Alert
-				  Event Name: %s
-				  Event ID: %s
-				  Einstein Time: %s
-				  MOA Event Page: %s\
-				  """ % (splitEvent[NAME_INDEX], splitEvent[ID_INDEX], splitEvent[TIME_INDEX], eventPageURL)
+	messageText = \
+"""\
+Short Duration Microlensing Event Alert
+Event Name: %s
+Event ID: %s
+Einstein Time: %s
+MOA Event Page: %s\
+""" % (splitEvent[NAME_INDEX], splitEvent[ID_INDEX], splitEvent[TIME_INDEX], eventPageURL)
 	mailAlert.send_alert(messageText, emailSubject, MAILING_LIST)
 
 if __name__ == "__main__":

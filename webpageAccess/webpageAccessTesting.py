@@ -3,7 +3,7 @@ webpageAccesTesting.py
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2015-07-22
+Date: 2015-07-28
 """
 
 import sys #not needed, used for debugging (e.g. calling exit())
@@ -14,20 +14,27 @@ import requests #for fetching webpages
 requests.packages.urllib3.disable_warnings() #to disable warnings when accessing insecure sites
 from bs4 import BeautifulSoup #html parsing
 from astropy.time import Time #not used yet, may need eventually for manipulating dates
+import mailAlert #for sending email alerts
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "logs")
+LOG_DIR = os.path.join(sys.path[0], "logsTesting")
 LOG_NAME = "webpageAccessTestingLog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 #set up filepath and directory for local copy of newest microlensing event
 EVENT_FILENAME = "lastEvent.txt"
-EVENT_DIR = os.path.join(sys.path[0], "lastEvent")
+EVENT_DIR = os.path.join(sys.path[0], "lastEventTesting")
 EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
+
+#setup URL paths for website event index and individual pages
+WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert2015/"
+INDEX_URL_DIR= "/index.dat"
+INDEX_URL = WEBSITE_URL + INDEX_URL_DIR
+EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id number attached to end
 
 #column numbers for event ID, Einstein time and baseline magnitude
 #for index.dat file (zero-based counting)
@@ -41,11 +48,9 @@ MIN_MAG = 17.5 #magnitude units - only check events as bright or brighter than t
 			   #(i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 
-#setup URL paths for website event index and individual pages
-WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert2015/"
-INDEX_URL_DIR= "/index.dat"
-INDEX_URL = WEBSITE_URL + INDEX_URL_DIR
-EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id number attached to end
+#Flag for mail alerts functionality and list of mailing addresses
+MAIL_ALERTS_ON = True
+MAILING_LIST = [ 'shanencross@gmail.com' ]
 
 def main():
 	logger.info("---------------------------------------")
@@ -53,7 +58,7 @@ def main():
 	logger.info("Storing newest event in: " + EVENT_FILEPATH)
 	logger.info("Max Einstein Time allowed: " + str(MAX_EINSTEIN_TIME) + " days")
 	logger.info("Dimmest magnitude allowed: " + str(MIN_MAG))
-	logger.info("Max magintude error allowed: " + str(MAX_MAG_ERR))
+	logger.info("Max magnitude error allowed: " + str(MAX_MAG_ERR))
 
 	#get index.dat text from website, which lists events
 	indexRequest = requests.get(INDEX_URL, verify=False)
@@ -84,7 +89,7 @@ def main():
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
 
-#check over new events, evaluating each for observatoin triggering
+#check over new events, evaluating each for observation triggering
 def checkEvents(localEvent, index):
 	localEventSplit = localEvent.split()
 	newestEventSplit = index[-1].split()
@@ -125,7 +130,10 @@ def evaluateEvent(splitEvent):
 		eventPageSoup = getEventPageSoup(splitEvent)
 		if isMicrolensing(eventPageSoup):
 			if checkMag(eventPageSoup):
-				logger.info("Trigger observation! ...if not too old")
+				logger.info("Event is potentially suitable for observation!")
+				if MAIL_ALERTS_ON:
+					logger.info("Mailing event alert...")
+					sendMailAlert(splitEvent)
 			else:
 				logger.info("Magnitude fail")
 		else:
@@ -190,6 +198,20 @@ def checkMag(eventPageSoup):
 		return False
 	else:
 		return True
+
+#Send mail alert upon detecting short duration microlensing event
+def sendMailAlert(splitEvent):
+	mailSubject = splitEvent[NAME_INDEX] + " - Short Duration Microlensing Event Alert"
+	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
+	messageText = \
+"""\
+Short Duration Microlensing Event Alert
+Event Name: %s
+Event ID: %s
+Einstein Time: %s
+MOA Event Page: %s\
+""" % (splitEvent[NAME_INDEX], splitEvent[ID_INDEX], splitEvent[TIME_INDEX], eventPageURL)
+	mailAlert.send_alert(messageText, mailSubject, MAILING_LIST)
 
 if __name__ == "__main__":
 	main()
