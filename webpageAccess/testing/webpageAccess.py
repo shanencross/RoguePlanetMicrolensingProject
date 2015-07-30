@@ -180,6 +180,7 @@ def getMag(eventPageSoup):
 	#Each error is word 1 of the same string.
 	magTable = eventPageSoup.find_all("table")[3]
 	rows = magTable.find_all('tr')
+
 	#Iterate backwards over magnitudes starting from the most recent,
 	#skipping over ones with too large errors
 	for i in xrange(len(rows)-1, 1, -1):
@@ -198,13 +199,23 @@ def getMag(eventPageSoup):
 			logger.debug("Current magnitude error is too large")
 	#If magnitude error is still too large after loop ends (without a break),
 	#magErrTooLarge will be True.
-	return [mag, magErr, magErrTooLarge]
+
+	#if no magnitude rows were found in table, magnitude list is null
+	if len(rows) > 2:
+		magList = [mag, magErr, magErrTooLarge]
+	else:
+		magList = None
+	return magList
 
 #check if magnitude is bright enough for observation
 def checkMag(eventPageSoup):
 	#get magnitude, error, and whether error is too large
 	magList = getMag(eventPageSoup)
 	#logger.debug("Returned mag array: " + str(magList))
+	#if no magnitudes were found
+	if magList is None:
+		logger.info("Magnitude: None found")
+		return False
 	mag = magList[0]
 	magErr = magList[1]
 	magErrTooLarge = magList[2]

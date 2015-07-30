@@ -77,8 +77,10 @@ print "Final mag error:", magErr
 print "Mag error too large:", magErrTooLarge
 print
 
-print len(magTable.find_all('tr'))
+print magTable.find_all('tr')[2]
 print
+
+"""
 
 #Iterate backwards through each row in the magnitude table, from most to least recent
 for row in reversed(magTable.find_all('tr')):
@@ -105,7 +107,7 @@ for row in reversed(magTable.find_all('tr')):
 print "Final mag:", mag
 print "Final mag error:", magErr
 print "Mag error too large:", magErrTooLarge
-
+"""
 """
 Pseudocode:
 #after passing other tests for triggering observation
