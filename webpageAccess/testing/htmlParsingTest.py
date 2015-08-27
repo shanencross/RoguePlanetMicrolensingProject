@@ -81,7 +81,6 @@ print magTable.find_all('tr')[2]
 print
 
 """
-
 #Iterate backwards through each row in the magnitude table, from most to least recent
 for row in reversed(magTable.find_all('tr')):
 	#this lists all rows which contains magnitudes
@@ -147,5 +146,4 @@ dt > (1/2)*tE
 do NOT observe!
 
 sigma(tMax) = 0.00 UT, sigma(tE) = 0.00 days
-
 """

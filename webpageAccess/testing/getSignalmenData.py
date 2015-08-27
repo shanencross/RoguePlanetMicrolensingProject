@@ -14,7 +14,7 @@ def getSignalmenValues(eventName):
 	filename = convertName(eventName)
 	modelFilepath = os.path.join(DATA_DIR, filename + ".model")
 
-	with open(MODEL_FILEPATH,'r') as file:
+	with open(modelFilepath,'r') as file:
 		line = file.readline()
 	entries = line.split()
 	t0_sig = float(entries[3]) + 2450000.0 #UTC?
@@ -25,9 +25,11 @@ def getSignalmenValues(eventName):
 	print u0_sig
 	print tE_sig
 	print eventName
+	print filename
 
 def convertName(eventName):
-	print "Under Construction"
+	filename = "KB" + eventName[2:4] + "%04d" % int(eventName[9:])
+	return filename
 
 def main():
 	if len(sys.argv) < 2:
