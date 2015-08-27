@@ -4,10 +4,10 @@ ACTIVE IN-USE COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2015-07-29
+Date: 2015-08-13
 """
 
-import sys #not needed, used for debugging (e.g. calling exit())
+import sys #for getting script directory
 import os #for file-handling
 import logging
 import loggerSetup
