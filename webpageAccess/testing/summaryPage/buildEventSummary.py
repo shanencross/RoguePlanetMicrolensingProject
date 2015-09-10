@@ -21,8 +21,8 @@ if not os.path.exists(EVENT_DIR):
 
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
 
-#values_MOA keywords: name, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks
-#values_OGLE keywords: name, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed, remarks
+#values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks
+#values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed, remarks
 def buildPage(eventPageSoup, values_MOA, simulate=True):
 	#update the current MOA values with the remaining ones that still need to be pulled from the webpage 
 	#(the errors, remarks, and lightcurve URL)
@@ -98,7 +98,8 @@ def getValues_OGLE(eventName):
 	lCurvePlotURL = "http://ogle.astrouw.edu.pl/ogle4/ews/data/2015/" + nameURL + "/lcurve.gif"
 	lCurvePlotZoomedURL = "http://ogle.astrouw.edu.pl/ogle4/ews/data/2015/" + nameURL + "/lcurve_s.gif"
 
-	values = {"name": eventName, "remarks": remarks, "tMax": TmaxValues[0], "tMax_err": TmaxValues[1], \
+	values = {"name": eventName, "pageURL": eventURL, "remarks": remarks, \
+								 "tMax": TmaxValues[0], "tMax_err": TmaxValues[1], \
 								 "tE": tauValues[0], "tE_err": tauValues[1], \
 								 "u0": u0Values[0], "u0_err": u0Values[1], \
 								 "lCurve": lCurvePlotURL, "lCurveZoomed": lCurvePlotZoomedURL}
@@ -143,11 +144,12 @@ def getValues_MOA(ID):
 	remarks = str(soup.find_all("table")[1].find("td").string)
 
 	lCurvePlotURL = "https://it019909.massey.ac.nz/moa/alert2015/datab/plot-" + ID + ".png"
-	values_MOA = {"name": eventName, "tMax": tMaxJD_values[0], "tMax_err": tMaxJD_values[1], \
-								   "tE": tE_values[0], "tE_err": tE_values[1], \
-								   "u0": u0_values[0], "u0_err": u0_values[1], \
-								   "mag": mag_values[0], "mag_err": mag_values[1], \
-								   "lCurve": lCurvePlotURL, "assessment": assessment, "remarks": remarks}
+	values_MOA = {"name": eventName, "pageURL": nameURL, 
+				  "tMax": tMaxJD_values[0], "tMax_err": tMaxJD_values[1], \
+				  "tE": tE_values[0], "tE_err": tE_values[1], \
+				  "u0": u0_values[0], "u0_err": u0_values[1], \
+				  "mag": mag_values[0], "mag_err": mag_values[1], 
+				  "lCurve": lCurvePlotURL, "assessment": assessment, "remarks": remarks}
 	return values_MOA	
 
 def getMag_MOA(eventPageSoup):
@@ -207,7 +209,7 @@ def buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMI
 	outputString = \
 """\
 MOA event: <br>
-Name: %s <br>
+Event: <a href=%s>%s</a> <br>
 Assessment: %s <br>
 Remarks: %s <br>
 tMax: %s +/- %s <br>
@@ -216,7 +218,7 @@ u0: %s +/- %s <br>
 Most recent magnitude: %s +/- %s <br>
 Light Curve: <br>
 <img src=%s width=500> \
-""" % (values_MOA["name"], values_MOA["assessment"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
+""" % (values_MOA["pageURL"], values_MOA["name"], values_MOA["assessment"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
 		values_MOA["tE"], values_MOA["tE_err"], values_MOA["u0"], values_MOA["u0_err"], values_MOA["mag"], values_MOA["mag_err"], \
 		values_MOA["lCurve"])
 
@@ -225,7 +227,7 @@ Light Curve: <br>
 <br>
 <br>
 OGLE event: <br> 
-Name: %s <br>
+Event: <a href=%s>%s</a> <br>
 Remarks: %s <br>
 tMax: %s +/- %s <br>
 tE: %s +/- %s <br>
@@ -234,7 +236,7 @@ Light Curve: <br>
 <img src="%s" height=512 width=600> <br>
 Light Curve Zoomed: <br>
 <img src="%s" height=512 width=600> \
-""" % (values_OGLE["name"], values_OGLE["remarks"], values_OGLE["tMax"], values_OGLE["tMax_err"], \
+""" % (values_OGLE["pageURL"], values_OGLE["name"], values_OGLE["remarks"], values_OGLE["tMax"], values_OGLE["tMax_err"], \
 		values_OGLE["tE"], values_OGLE["tE_err"], values_OGLE["u0"], values_OGLE["u0_err"], \
 		values_OGLE["lCurve"], values_OGLE["lCurveZoomed"])
 
@@ -243,7 +245,7 @@ Light Curve Zoomed: <br>
 <br>
 <br>
 ARTEMIS values using MOA event: <br>
-Name: %s <br>
+Event: %s <br>
 tMax: %s <br>
 tE: %s <br>
 u0: %s\
@@ -254,7 +256,7 @@ u0: %s\
 <br>
 <br>
 ARTEMIS values using OGLE event: <br>
-Name: %s <br>
+Event: %s <br>
 tMax: %s <br>
 tE: %s <br>
 u0: %s\
