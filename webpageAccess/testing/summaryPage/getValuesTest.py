@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import requests
 requests.packages.urllib3.disable_warnings()
 from datetime import datetime
-from astropy.time import Time
 
 #default values
 EVENT_NAME = "2015-BLG-1812"
@@ -49,6 +48,20 @@ def main():
 			printMOAvalues(eventName)
 
 def printMOAvalues(eventName):
+	MOA_values = getMOAvalues(eventName)
+	"""
+	print "URL: %s" % MOA_values[0]
+	print "tMax (JD): %s" % getString(MOA_values[1])
+	print "tE: %s" % getString((MOA_values[2])
+	print "u0: %s" % getString(MOA_values[3])
+	print "Light curve plot:", MOA_values[4]
+	if mag_values is not None:
+		print "mag: %s" % getString(MOA_values[5])
+	print "Assessment: %s" % MOA_values[6]
+	print "Remarks: %s" % MOA_values[7]
+	"""
+
+def getMOAvalues(eventName):
 	if eventName is None:
 		print "No event found for %s" % eventName
 		return
@@ -66,40 +79,49 @@ def printMOAvalues(eventName):
 
 	tMax_line = microTable[0].find_all('td')
 	tMaxJD = float(tMax_line[2].string.split()[1])
-
 	tMax_splitString = tMax_line[4].string.split()
 	tMaxJD_err = float(tMax_splitString[0])
 	tMaxUT = str(tMax_splitString[2][1:-1])
+	tMaxJD_values = (tMaxJD, tmaxJD_err)
 
 	tE_line = microTable[1].find_all('td')
 	tE = float(tE_line[2].string)
 	tE_err = float(tE_line[4].string.split()[0])
+	tE_values = (tE, tE_err)
 
 	u0_line = microTable[2].find_all('td')
 	u0 = float(u0_line[2].string)
 	u0_err = float(u0_line[4].string)
-	magValues = getMag_MOA(soup)
-	if magValues is not None:
-		mag = magValues[0]
-		mag_err = magValues[1]
+	u0_values = (u0, u0_err)
+
+	mag_values = getMag_MOA(soup)
+	if mag_values is not None:
+		mag = mag_values[0]
+		mag_err = mag_values[1]
 	
 	assessment = soup.find(string="Current assessment:").next_element.string
-	remarks = soup.find_all("table")[1].find("td").string
-
-	print "u0: %s +/- %s" % (u0, u0_err)
-	print "tE: %s +/- %s" % (tE, tE_err)
-	print "tMax (JD): %s +/- %s" % (tMaxJD, tMaxJD_err)
-	print "tMax (UT): %s" % tMaxUT
-	if magValues is not None:
-		print "mag: %s +/- %s" % (mag, mag_err)
-	print "Assessment:", assessment
-	print "Remarks:", remarks
-	
+	remarks = soup.find_all("table")[1].find("td").string	
 
 	lCurvePlotURL = "https://it019909.massey.ac.nz/moa/alert2015/datab/plot-" + ID + ".png"
-	print "Light curve plot:", lCurvePlotURL
+	values_MOA = {"name": nameURL, "tMax": tMaxJD_values[0], "tMax_err": tMaxJD_values[1], \
+								   "tE": tE_values[0], "tE_err":, tE_values[1], \
+								   "u0": u0_values[0], "u0_err": u0_values[1], \
+								   "mag": mag_values[0], "mag_err": mag_values[1], \
+								   "lCurve": lCurvePlotURL, "assessment": assessment, "remarks": remarks}
+	return values_MOA
 
 def printOGLEvalues(eventName):
+	OGLE_values = getOGLEvalues(eventName)
+
+	"""
+	print "Tmax: %s" % getString(OGLE_values[1])
+	print "tau: %s" % getString(OGLE_values[2])
+	print "u0: %s" % getString(OGLE_values[3])
+	print "Light curve plot: %s" % OGLE_values[4]
+	print "Light curve plot zoomed: %s" % OGLE_values[5]
+	"""
+
+getOGLEvalues(eventName):
 	if eventName == None:
 		print "No event found for %s" % eventName
 		return
@@ -118,20 +140,20 @@ def printOGLEvalues(eventName):
 	tauColumns = paramRows[1].find_all('td')
 	u0Columns = paramRows[2].find_all('td')
 
-	TmaxValues = getValues(TmaxColumns)
-	tauValues = getValues(tauColumns)
-	u0Values = getValues(u0Columns)
-
-	print "Tmax:", getString(TmaxValues)
-	print "tau:", getString(tauValues)
-	print "u0:", getString(u0Values)
+	TmaxValues = getValues_OGLE(TmaxColumns)
+	tauValues = getValues_OGLE(tauColumns)
+	u0Values = getValues_OGLE(u0Columns)
 
 	lCurvePlotURL = "http://ogle.astrouw.edu.pl/ogle4/ews/data/2015/" + nameURL + "/lcurve.gif"
 	lCurvePlotZoomedURL = "http://ogle.astrouw.edu.pl/ogle4/ews/data/2015/" + nameURL + "/lcurve_s.gif"
-	print "Light curve plot:", lCurvePlotURL
-	print "Light curve plot zoomed:", lCurvePlotZoomedURL
 
-def getValues(columns):
+	values_OGLE = {"URL": eventURL, "tMax": TmaxValues[0], "tMax_err": TmaxValues[1], \
+							 		"tE": tauValues[0], "tE_err": tauValues[1], \
+									"u0": u0Values[0], "u0_err": u0Values[1] \
+									"lCurve": lCurvePlotURL, "lCurveZoomed": lCurvePlotZoomedURL}
+	return values_OGLE
+
+def getValues_OGLE(columns):
 	val = float(columns[1].string.split()[0])
 	valErr = float(columns[3].string.split()[0])
 	return (val, valErr)
@@ -142,12 +164,12 @@ def getString(values):
 def MOAtoOGLE(eventName):
 	#example eventName: "2015-BLG-462"
 	#MOA-OGLE cross reference: https://it019909.massey.ac.nz/moa/alert2015/moa2ogle.txt	
-	return getEventName(eventName, True)
+	return getEventName(eventName, isMOAtoOGLE=True)
 
 def OGLEtoMOA(eventName):
 	#example eventName: "2015-BLG-1812"
 	#MOA-OGLE cross reference: https://it019909.massey.ac.nz/moa/alert2015/moa2ogle.txt	
-	return getEventName(eventName, False)
+	return getEventName(eventName, isMOAtoOGLE=False)
 
 def getEventName(eventName, isMOAtoOGLE=True):
 	crossReferenceURL = "https://it019909.massey.ac.nz/moa/alert2015/moa2ogle.txt"

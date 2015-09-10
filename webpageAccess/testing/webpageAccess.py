@@ -129,24 +129,24 @@ def evaluateEvent(splitEvent):
 	logger.info("Event ID: " + splitEvent[ID_INDEX])
 	#print "Einsten time: " + splitEvent[TIME_INDEX]
 	#print "Baseline magnitude: " + splitEvent[BASELINE_MAG_INDEX]
-	values_MOA = [splitEvent[NAME_INDEX], splitEvent[TMAX_INDEX], splitEvent[TIME_INDEX], splitEvent[U0_INDEX]]
+	values_MOA = {"name": splitEvent[NAME_INDEX], "ID": splitEvent[ID_INDEX], "tMax": splitEvent[TMAX_INDEX], \
+											      "tE": splitEvent[TIME_INDEX], "u0": splitEvent[U0_INDEX]}
 	#evaluate Einstein time, microlensing vs. cv status, and magnitude
 	#for whether to trigger observation
 	if checkEinsteinTime(splitEvent):
 		eventPageSoup = getEventPageSoup(splitEvent)
 		assessment = getMicrolensingAssessment(eventPageSoup)
-		values_MOA.append(assessment)
+		values_MOA["assessment"] = assessment
 		if isMicrolensing(assessment):
 			magValues = getMag(eventPageSoup)
-			values_MOA.append(magValues)
+			values_MOA["mag"] = magValues[0]
+			values_MOA["mag_err"] = magValues[1]
 			if checkMag(magValues):
-				getRemarks(eventPageSoup)
 				logger.info("Event is potentially suitable for observation!")
 				if MAIL_ALERTS_ON:
 					logger.info("Mailing event alert...")
 					sendMailAlert(splitEvent)
-					#values_MOA: [event name, tMax, tE, u0, microlensing assessment, mag, remarks]
-					buildEventSummary.buildPage(values_MOA, simluate=True)
+					buildEventSummary.buildPage(eventPageSoup, values_MOA, simluate=True)
 			else:
 				logger.info("Magnitude fail")
 		else:
@@ -238,12 +238,6 @@ def checkMag(magValues):
 		return False
 	else:
 		return True
-
-
-def getRemarks(eventpageSoup):
-	remarks = soup.find_all("table")[1].find("td").string
-	logger.debug("Remarks: " + remarks)
-	return remarks
 
 #Send mail alert upon detecting short duration microlensing event
 def sendMailAlert(splitEvent):
