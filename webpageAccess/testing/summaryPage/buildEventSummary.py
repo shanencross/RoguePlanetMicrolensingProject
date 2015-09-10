@@ -19,6 +19,8 @@ EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
 
+ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
+
 #values_MOA keywords: name, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks
 #values_OGLE keywords: name, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed, remarks
 def buildPage(eventPageSoup, values_MOA, simulate=True):
@@ -32,7 +34,6 @@ def buildPage(eventPageSoup, values_MOA, simulate=True):
 	values_ARTEMIS_MOA = getValues_ARTEMIS(values_MOA["name"], isMOA=True)
 	values_ARTEMIS_OGLE = getValues_ARTEMIS(name_OGLE, isMOA=False)
 	outputString = buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, vlues_ARTEMIS_OGLE)
-	
 
 #currently return dict of tMax err, tE err, u0 err, remarks, and lCurve URL, given soup and ID --
 #Perhaps later, should be updated to return dict of all missing entries, g
@@ -189,18 +190,19 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 	else:
 		filename = "OB"
 	filename += eventName[2:4] + "%04d" % int(eventName[9:])
-	modelFilepath = os.path.join(DATA_DIR, filename + ".model")
+	modelFilepath = os.path.join(ARTEMIS_DIR, filename + ".model")
 	with open(modelFilepath,'r') as file:
 		line = file.readline()
 	entries = line.split()
 	t0 = float(entries[3]) + 2450000.0 #UTC?
 	u0 = float(entries[7]) 
 	tE = float(entries[5]) #days?
-	values = {"tMax": t0, "u0:", u0, "tE": tE}
+	values = {"name": filename, "tMax": t0, "u0": u0, "tE": tE}
 	return values
 
 #values_MOA keywords: name, assessment, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, lCurve
 #values_OGLE keywords: name, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed
+#values_ARTEMIS_MOA: name, tMax, tE, u0
 def buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE):
 	outputString = \
 """\
@@ -212,13 +214,15 @@ tMax: %s +/- %s <br>
 tE: %s +/- %s <br>
 u0: %s +/- %s <br>
 Most recent magnitude: %s +/- %s <br>
-Light Curve URL: %s <br>
-""" % (values_MOA[, values_MOA["name"], values_MOA["assessment"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
+Light Curve: <br>
+<img src=%s width=500> \
+""" % (values_MOA["name"], values_MOA["assessment"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
 		values_MOA["tE"], values_MOA["tE_err"], values_MOA["u0"], values_MOA["u0_err"], values_MOA["mag"], values_MOA["mag_err"], \
 		values_MOA["lCurve"])
 
 	outputString += \
 """\
+<br>
 <br>
 OGLE event: <br> 
 Name: %s <br>
@@ -226,13 +230,35 @@ Remarks: %s <br>
 tMax: %s +/- %s <br>
 tE: %s +/- %s <br>
 u0: %s +/- %s <br>
-Most recent magnitude: %s +/- %s <br>
-Light Curve URL: %s <br>
-Light Curve Zoomed URL: %s\
-""" % (values_MOA[, values_MOA["name"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
-		values_MOA["tE"], values_MOA["tE_err"], values_MOA["u0"], values_MOA["u0_err"], \
-		values_MOA["lCurve"], values_MOA["lCurveZoomed"])
+Light Curve: <br>
+<img src="%s" height=512 width=600> <br>
+Light Curve Zoomed: <br>
+<img src="%s" height=512 width=600> \
+""" % (values_OGLE["name"], values_OGLE["remarks"], values_OGLE["tMax"], values_OGLE["tMax_err"], \
+		values_OGLE["tE"], values_OGLE["tE_err"], values_OGLE["u0"], values_OGLE["u0_err"], \
+		values_OGLE["lCurve"], values_OGLE["lCurveZoomed"])
 
+	outputString += \
+"""\
+<br>
+<br>
+ARTEMIS values using MOA event: <br>
+Name: %s <br>
+tMax: %s <br>
+tE: %s <br>
+u0: %s\
+""" % (values_ARTEMIS_MOA["name"], values_ARTEMIS_MOA["tMax"], values_ARTEMIS_MOA["tE"], values_ARTEMIS_MOA["u0"])
+
+	outputString += \
+"""\
+<br>
+<br>
+ARTEMIS values using OGLE event: <br>
+Name: %s <br>
+tMax: %s <br>
+tE: %s <br>
+u0: %s\
+""" % (values_ARTEMIS_OGLE["name"], values_ARTEMIS_OGLE["tMax"], values_ARTEMIS_OGLE["tE"], values_ARTEMIS_OGLE["u0"])
 	return outputString
 
 def main():
