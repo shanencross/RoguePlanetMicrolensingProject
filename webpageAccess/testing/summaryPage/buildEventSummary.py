@@ -8,8 +8,17 @@ Purpose: Output summary of event information as an HTML page
 import sys #for getting script directory
 import os #for file-handling
 import requests
+import logging
+import summaryLoggerSetup
 requests.packages.urllib3.disable_warnings()
 from bs4 import BeautifulSoup #html parsing
+
+#create and set up filepath and directory for logs -
+#log dir is subdir of script
+LOG_DIR = os.path.join(sys.path[0], "summaryLogs")
+LOG_NAME = "summaryLog"
+LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
+logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 MAX_MAG_ERR = 0.7
 
@@ -24,29 +33,46 @@ ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
 #values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks
 #values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed, remarks
 def buildPage(eventPageSoup, values_MOA, simulate=True):
+	logger.info("--------------------------------------------")
 	#update the current MOA values with the remaining ones that still need to be pulled from the webpage 
 	#(the errors, remarks, and lightcurve URL)
 	remainingValues_MOA = getRemainingValues_MOA(eventPageSoup, values_MOA["ID"])
 	values_MOA.update(remainingValues_MOA)
-
+	logger.debug("MOA values: " + str(values_MOA))
 	name_OGLE = MOA_to_OGLE(values_MOA["name"])
-	values_OGLE = getValues_OGLE(name_OGLE)
+	if name_OGLE is not None:
+		values_OGLE = getValues_OGLE(name_OGLE)
+		values_ARTEMIS_OGLE = getValues_ARTEMIS(name_OGLE, isMOA=False)
+	else:
+		values_OGLE = None
+		values_ARTEMIS_OGLE = None
 	values_ARTEMIS_MOA = getValues_ARTEMIS(values_MOA["name"], isMOA=True)
-	values_ARTEMIS_OGLE = getValues_ARTEMIS(name_OGLE, isMOA=False)
-	outputString = buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, vlues_ARTEMIS_OGLE)
+	outputString = buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE)	
+	logger.info("Output:\n" + outputString)
+
+	outputDir = os.path.join(sys.path[0], "pages")
+	if not os.path.exists(outputDir):
+		os.makedirs(outputDir)
+	outputFilename = values_MOA["name"] + ".html"
+	outputFilepath = os.path.join(outputDir, outputFilename)
+	with open(outputFilepath, 'w') as outputFile:
+		outputFile.write(outputString)
+	logger.info("--------------------------------------------")
 
 #currently return dict of tMax err, tE err, u0 err, remarks, and lCurve URL, given soup and ID --
 #Perhaps later, should be updated to return dict of all missing entries, g
 #given a partially full MOA values dict?
 
 def getRemainingValues_MOA(eventPageSoup, ID):
-	microTable = soup.find(id="micro").find_all('tr')
+	microTable = eventPageSoup.find(id="micro").find_all('tr')
 	tMaxJD_err = float(microTable[0].find_all('td')[4].string.split()[0])
 	tE_err = float(microTable[1].find_all('td')[4].string.split()[0])
 	u0_err = float(microTable[2].find_all('td')[4].string)
-	remarks = str(soup.find_all("table")[1].find("td").string)
+	remarks = str(eventPageSoup.find_all("table")[1].find("td").string)
 	lCurvePlotURL = "https://it019909.massey.ac.nz/moa/alert2015/datab/plot-" + ID + ".png"
-	return {"tMax_err": tMaxJD_err, "tE_err": tE_err, "u0_err": u0_err, "lCurve": lCurvePlotURL, "remarks": remarks}
+	updateValues = {"tMax_err": tMaxJD_err, "tE_err": tE_err, "u0_err": u0_err, "lCurve": lCurvePlotURL, "remarks": remarks}
+	logger.debug("Updated values: " + str(updateValues))
+	return updateValues
 
 def MOA_to_OGLE(eventName):
 	crossReferenceURL = "https://it019909.massey.ac.nz/moa/alert2015/moa2ogle.txt"
@@ -54,6 +80,7 @@ def MOA_to_OGLE(eventName):
 	crossReference = crossReferenceRequest.content.splitlines()
 
 	eventName_MOA = "MOA-" + eventName
+	eventName_OGLE = ""
 	for line in reversed(crossReference):
 		if line[0] != "#":
 			lineSplit = line.split()
@@ -67,6 +94,7 @@ def MOA_to_OGLE(eventName):
 		return None
 	else:
 		eventName_final = eventName_OGLE[5:]
+		logger.debug("MOA to OGLE converted name: " + str(eventName_final))
 		return eventName_final
 
 def getValues_OGLE(eventName):
@@ -103,6 +131,8 @@ def getValues_OGLE(eventName):
 								 "tE": tauValues[0], "tE_err": tauValues[1], \
 								 "u0": u0Values[0], "u0_err": u0Values[1], \
 								 "lCurve": lCurvePlotURL, "lCurveZoomed": lCurvePlotZoomedURL}
+
+	logger.debug("OGLE values: " + str(values))
 	return values
 
 def parseValues_OGLE(columns):
@@ -150,6 +180,8 @@ def getValues_MOA(ID):
 				  "u0": u0_values[0], "u0_err": u0_values[1], \
 				  "mag": mag_values[0], "mag_err": mag_values[1], 
 				  "lCurve": lCurvePlotURL, "assessment": assessment, "remarks": remarks}
+
+	logger.info("MOA values: " + str(values_MOA))
 	return values_MOA	
 
 def getMag_MOA(eventPageSoup):
@@ -184,12 +216,13 @@ def getMag_MOA(eventPageSoup):
 	else:
 		magValues = None
 
+	logger.debug("Mag values: " + str(magValues))
 	return magValues
 
 def getValues_ARTEMIS(eventName, isMOA=True):
 	if isMOA:
  		filename = "KB"
-	else:
+	else: #is OGLE
 		filename = "OB"
 	filename += eventName[2:4] + "%04d" % int(eventName[9:])
 	modelFilepath = os.path.join(ARTEMIS_DIR, filename + ".model")
@@ -200,6 +233,10 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 	u0 = float(entries[7]) 
 	tE = float(entries[5]) #days?
 	values = {"name": filename, "tMax": t0, "u0": u0, "tE": tE}
+	if isMOA:
+		logger.info("ARTEMIS MOA values: " + str(values))
+	else: # is OGLE
+		logger.info("ARTEMIS OGLE values: " + str(values))
 	return values
 
 #values_MOA keywords: name, assessment, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, lCurve
@@ -222,7 +259,9 @@ Light Curve: <br>
 		values_MOA["tE"], values_MOA["tE_err"], values_MOA["u0"], values_MOA["u0_err"], values_MOA["mag"], values_MOA["mag_err"], \
 		values_MOA["lCurve"])
 
-	outputString += \
+
+	if values_OGLE is not None:
+		outputString += \
 """\
 <br>
 <br>
@@ -251,7 +290,8 @@ tE: %s <br>
 u0: %s\
 """ % (values_ARTEMIS_MOA["name"], values_ARTEMIS_MOA["tMax"], values_ARTEMIS_MOA["tE"], values_ARTEMIS_MOA["u0"])
 
-	outputString += \
+	if values_ARTEMIS_OGLE is not None:
+		outputString += \
 """\
 <br>
 <br>

@@ -16,7 +16,7 @@ requests.packages.urllib3.disable_warnings() #to disable warnings when accessing
 from bs4 import BeautifulSoup #html parsing
 from astropy.time import Time #not used yet, may need eventually for manipulating dates
 import mailAlert #for sending email alerts
-import buildEventSummary
+from summaryPage import buildEventSummary
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
@@ -54,6 +54,7 @@ MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 
 #Flag for mail alerts functionality and list of mailing addresses
 MAIL_ALERTS_ON = False
+SUMMARY_BUILDER_ON = True
 MAILING_LIST = [ 'shanencross@gmail.com' ]
 
 def main():
@@ -134,7 +135,9 @@ def evaluateEvent(splitEvent):
 	#evaluate Einstein time, microlensing vs. cv status, and magnitude
 	#for whether to trigger observation
 	if checkEinsteinTime(splitEvent):
-		eventPageSoup = getEventPageSoup(splitEvent)
+		eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
+		values_MOA["pageURL"] = eventPageURL
+		eventPageSoup = BeautifulSoup(requests.get(eventPageURL, verify=False).content, 'lxml')
 		assessment = getMicrolensingAssessment(eventPageSoup)
 		values_MOA["assessment"] = assessment
 		if isMicrolensing(assessment):
@@ -146,7 +149,8 @@ def evaluateEvent(splitEvent):
 				if MAIL_ALERTS_ON:
 					logger.info("Mailing event alert...")
 					sendMailAlert(splitEvent)
-					buildEventSummary.buildPage(eventPageSoup, values_MOA, simluate=True)
+				if SUMMARY_BUILDER_ON:
+					buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
 			else:
 				logger.info("Magnitude fail")
 		else:
@@ -163,14 +167,6 @@ def checkEinsteinTime(splitEvent):
 	else:
 		return False
 
-#get BeautifulSoup object representing HTML page for event page
-def getEventPageSoup(splitEvent):
-	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
-	eventPageRequest = requests.get(eventPageURL, verify=False)
-	eventPage = eventPageRequest.content
-	eventPageSoup = BeautifulSoup(eventPage, 'lxml')
-	return eventPageSoup
-
 def getMicrolensingAssessment(eventPageSoup):
 	assessment = eventPageSoup.find(string="Current assessment:").next_element.string
 	return assessment
@@ -178,7 +174,7 @@ def getMicrolensingAssessment(eventPageSoup):
 #check if event is microlensing, cv, a combination of the two, or unknown
 #Should this return true or false if event is "microlensing/cv" (currently returns true)?
 def isMicrolensing(assessment):
-	logger.info("Current assessment: " + microlensingOrCV)
+	logger.info("Current assessment: " + assessment)
 	if assessment == "microlensing" or assessment == "microlensing/cv":
 		return True
 	else:
