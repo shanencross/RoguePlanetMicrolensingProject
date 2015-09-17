@@ -2,8 +2,8 @@
 buildEventSummaryPage.py
 ACTIVE IN-USE COPY
 Author: Shanen Cross
-Date: 2015-09-16
-Purpose: Output summary of event information as an HTML page
+Date: 2015-09-17
+Purpose: Output summary of event information from different surveys and ARTEMIS as an HTML page
 """
 
 import sys #for getting script directory
@@ -23,6 +23,7 @@ logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FOR
 
 MAX_MAG_ERR = 0.7
 
+#comment this out when saving as in-use copy
 """
 EVENT_FILENAME = "summaryPageTest.html"
 EVENT_DIR = os.path.join(sys.path[0], "summaryPageOutputTests")
@@ -232,10 +233,13 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 	with open(modelFilepath,'r') as file:
 		line = file.readline()
 	entries = line.split()
-	t0 = float(entries[3]) + 2450000.0 #UTC?
+	t0 = float(entries[3]) + 2450000.0 #UTC(?)
+	t0_err = float(entries[4])
+	tE = float(entries[5]) #days
+	tE_err = float(entries[6])
 	u0 = float(entries[7]) 
-	tE = float(entries[5]) #days?
-	values = {"name": filename, "tMax": t0, "u0": u0, "tE": tE}
+	u0_err = float(entries[8])
+	values = {"name": filename, "tMax": t0, "tMax_err": t0_err, "u0": u0, "u0_err": u0_err, "tE": tE, "tE_err": tE_err}
 	if isMOA:
 		logger.info("ARTEMIS MOA values: " + str(values))
 	else: # is OGLE
@@ -288,10 +292,12 @@ Light Curve Zoomed: <br>
 <br>
 ARTEMIS values using MOA event: <br>
 Event: %s <br>
-tMax: %s <br>
-tE: %s <br>
-u0: %s\
-""" % (values_ARTEMIS_MOA["name"], values_ARTEMIS_MOA["tMax"], values_ARTEMIS_MOA["tE"], values_ARTEMIS_MOA["u0"])
+tMax: %s +/- %s <br>
+tE: %s +/- %s <br>
+u0: %s +/-%s\
+""" % (values_ARTEMIS_MOA["name"], values_ARTEMIS_MOA["tMax"], values_ARTEMIS_MOA["tMax_err"], \
+									values_ARTEMIS_MOA["tE"], values_ARTEMIS_MOA["tE_err"], \
+									values_ARTEMIS_MOA["u0"], values_ARTEMIS_MOA["u0_err"])
 
 	if values_ARTEMIS_OGLE is not None:
 		outputString += \
@@ -300,10 +306,12 @@ u0: %s\
 <br>
 ARTEMIS values using OGLE event: <br>
 Event: %s <br>
-tMax: %s <br>
-tE: %s <br>
-u0: %s\
-""" % (values_ARTEMIS_OGLE["name"], values_ARTEMIS_OGLE["tMax"], values_ARTEMIS_OGLE["tE"], values_ARTEMIS_OGLE["u0"])
+tMax: %s +/- %s <br>
+tE: %s +/- %s <br>
+u0: %s +/-%s\
+""" % (values_ARTEMIS_OGLE["name"], values_ARTEMIS_OGLE["tMax"], values_ARTEMIS_OGLE["tMax_err"], \
+									values_ARTEMIS_OGLE["tE"], values_ARTEMIS_OGLE["tE_err"], \
+									values_ARTEMIS_OGLE["u0"], values_ARTEMIS_OGLE["u0_err"])
 	return outputString
 
 def main():

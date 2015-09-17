@@ -54,7 +54,7 @@ MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 
 #Flag for mail alerts functionality and list of mailing addresses
 MAIL_ALERTS_ON = False
-SUMMARY_BUILDER_ON = False
+SUMMARY_BUILDER_ON = True
 MAILING_LIST = [ 'shanencross@gmail.com', 'rstreet@lcogt.net' ]
 
 def main():
