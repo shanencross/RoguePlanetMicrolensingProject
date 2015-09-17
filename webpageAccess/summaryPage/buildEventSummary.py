@@ -1,6 +1,6 @@
 """
 buildEventSummaryPage.py
-IN-PROGRESS WORKING COPY
+ACTIVE IN-USE COPY
 Author: Shanen Cross
 Date: 2015-09-16
 Purpose: Output summary of event information as an HTML page
@@ -23,11 +23,13 @@ logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FOR
 
 MAX_MAG_ERR = 0.7
 
+"""
 EVENT_FILENAME = "summaryPageTest.html"
 EVENT_DIR = os.path.join(sys.path[0], "summaryPageOutputTests")
 EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
+"""
 
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
 OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/2015/WWWLogs/eventSummaryPages"
@@ -52,9 +54,8 @@ def buildPage(eventPageSoup, values_MOA, simulate=True):
 	outputString = buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE)	
 	logger.info("Output:\n" + outputString)
 
-	outputDir = os.path.join("/science/robonet/rob/Operations/Logs/2015/WWWLogs", "eventPages")
-	if not os.path.exists(outputDir):
-		os.makedirs(outputDir)
+	if not os.path.exists(OUTPUT_DIR):
+		os.makedirs(OUTPUT_DIR)
 	outputFilename = values_MOA["name"] + "_summary.html"
 	outputFilepath = os.path.join(OUTPUT_DIR, outputFilename)
 	with open(outputFilepath, 'w') as outputFile:

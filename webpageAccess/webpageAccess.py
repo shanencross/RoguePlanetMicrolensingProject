@@ -4,7 +4,7 @@ ACTIVE IN-USE COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2015-08-13
+Date: 2015-09-16
 """
 
 import sys #for getting script directory
@@ -16,6 +16,7 @@ requests.packages.urllib3.disable_warnings() #to disable warnings when accessing
 from bs4 import BeautifulSoup #html parsing
 from astropy.time import Time #not used yet, may need eventually for manipulating dates
 import mailAlert #for sending email alerts
+from summaryPage import buildEventSummary
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
@@ -41,16 +42,19 @@ EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id num
 #for index.dat file (zero-based counting)
 NAME_INDEX = 0
 ID_INDEX = 1
+TMAX_INDEX = 4
 TIME_INDEX = 5
+U0_INDEX = 6
 BASELINE_MAG_INDEX = 7
 
 MAX_EINSTEIN_TIME = 3 #days - only check events as short or shorter than this
-MIN_MAG = 17.5 #magnitude units - only check events as bright or brighter than this 
+MIN_MAG = 17.5 #magnitude units - only check events as bright or brighter than this
 			   #(i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 
 #Flag for mail alerts functionality and list of mailing addresses
 MAIL_ALERTS_ON = True
+SUMMARY_BUILDER_ON = True
 MAILING_LIST = [ 'shanencross@gmail.com', 'rstreet@lcogt.net' ]
 
 def main():
@@ -126,17 +130,28 @@ def evaluateEvent(splitEvent):
 	logger.info("Event ID: " + splitEvent[ID_INDEX])
 	#print "Einsten time: " + splitEvent[TIME_INDEX]
 	#print "Baseline magnitude: " + splitEvent[BASELINE_MAG_INDEX]
-
+	values_MOA = {"name": splitEvent[NAME_INDEX], "ID": splitEvent[ID_INDEX], "tMax": splitEvent[TMAX_INDEX], \
+											      "tE": splitEvent[TIME_INDEX], "u0": splitEvent[U0_INDEX]}
 	#evaluate Einstein time, microlensing vs. cv status, and magnitude
 	#for whether to trigger observation
 	if checkEinsteinTime(splitEvent):
-		eventPageSoup = getEventPageSoup(splitEvent)
-		if isMicrolensing(eventPageSoup):
-			if checkMag(eventPageSoup):
+		eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
+		values_MOA["pageURL"] = eventPageURL
+		eventPageSoup = BeautifulSoup(requests.get(eventPageURL, verify=False).content, 'lxml')
+		assessment = getMicrolensingAssessment(eventPageSoup)
+		values_MOA["assessment"] = assessment
+		if isMicrolensing(assessment):
+			magValues = getMag(eventPageSoup)
+			values_MOA["mag"] = magValues[0]
+			values_MOA["mag_err"] = magValues[1]
+			if checkMag(magValues):
 				logger.info("Event is potentially suitable for observation!")
 				if MAIL_ALERTS_ON:
 					logger.info("Mailing event alert...")
-					sendMailAlert(splitEvent)
+					sendMailAlert(values_MOA)
+				if SUMMARY_BUILDER_ON:
+					logger.info("Generating event summary page...")
+					buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
 			else:
 				logger.info("Magnitude fail")
 		else:
@@ -153,21 +168,15 @@ def checkEinsteinTime(splitEvent):
 	else:
 		return False
 
-#get BeautifulSoup object representing HTML page for event page
-def getEventPageSoup(splitEvent):
-	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
-	eventPageRequest = request = requests.get(eventPageURL, verify=False)
-	eventPage = eventPageRequest.content
-	eventPageSoup = BeautifulSoup(eventPage, 'lxml')
-	return eventPageSoup
+def getMicrolensingAssessment(eventPageSoup):
+	assessment = eventPageSoup.find(string="Current assessment:").next_element.string
+	return assessment
 
 #check if event is microlensing, cv, a combination of the two, or unknown
 #Should this return true or false if event is "microlensing/cv" (currently returns true)?
-def isMicrolensing(eventPageSoup):
-	#Best way to access microlensing vs. cv assessment?
-	microlensingOrCV = eventPageSoup.find(string="Current assessment:").next_element.string
-	logger.info("Current assessment: " + microlensingOrCV)
-	if microlensingOrCV == "microlensing" or microlensingOrCV == "microlensing/cv":
+def isMicrolensing(assessment):
+	logger.info("Current assessment: " + assessment)
+	if assessment == "microlensing" or assessment == "microlensing/cv":
 		return True
 	else:
 		return False
@@ -180,6 +189,7 @@ def getMag(eventPageSoup):
 	#Each error is word 1 of the same string.
 	magTable = eventPageSoup.find_all("table")[3]
 	rows = magTable.find_all('tr')
+
 	#Iterate backwards over magnitudes starting from the most recent,
 	#skipping over ones with too large errors
 	for i in xrange(len(rows)-1, 1, -1):
@@ -198,16 +208,24 @@ def getMag(eventPageSoup):
 			logger.debug("Current magnitude error is too large")
 	#If magnitude error is still too large after loop ends (without a break),
 	#magErrTooLarge will be True.
-	return [mag, magErr, magErrTooLarge]
+
+	#if no magnitude rows were found in table, magnitude list is null
+	if len(rows) > 2:
+		magValues = (mag, magErr, magErrTooLarge)
+	else:
+		magValues = None
+	return magValues
 
 #check if magnitude is bright enough for observation
-def checkMag(eventPageSoup):
-	#get magnitude, error, and whether error is too large
-	magList = getMag(eventPageSoup)
-	#logger.debug("Returned mag array: " + str(magList))
-	mag = magList[0]
-	magErr = magList[1]
-	magErrTooLarge = magList[2]
+def checkMag(magValues):
+	#logger.debug("Returned mag array: " + str(magValues))
+	#if no magnitudes were found
+	if magValues is None:
+		logger.info("Magnitude: None found")
+		return False
+	mag = magValues[0]
+	magErr = magValues[1]
+	magErrTooLarge = magValues[2]
 	logger.info("Magnitude: " + str(mag))
 	logger.info("Magnitude error: " + str(magErr))
 
@@ -219,17 +237,19 @@ def checkMag(eventPageSoup):
 		return True
 
 #Send mail alert upon detecting short duration microlensing event
-def sendMailAlert(splitEvent):
-	mailSubject = splitEvent[NAME_INDEX] + " - Short Duration Microlensing Event Alert"
-	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
+def sendMailAlert(values_MOA):
+	eventName = values_MOA["name"]
+	mailSubject = eventName + " - Short Duration Microlensing Event Alert"
+	summaryPageURL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + eventName + "_summary.html"
 	messageText = \
 """\
 Short Duration Microlensing Event Alert
 Event Name: %s
 Event ID: %s
-Einstein Time: %s
-MOA Event Page: %s\
-""" % (splitEvent[NAME_INDEX], splitEvent[ID_INDEX], splitEvent[TIME_INDEX], eventPageURL)
+Einstein Time (MOA): %s
+MOA Event Page: %s
+Event summary page: %s\
+""" % (eventName, values_MOA["ID"], values_MOA["tE"], values_MOA["pageURL"], summaryPageURL)
 	mailAlert.send_alert(messageText, mailSubject, MAILING_LIST)
 
 if __name__ == "__main__":

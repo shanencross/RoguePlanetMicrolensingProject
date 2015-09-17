@@ -4,7 +4,7 @@ IN-PROGRESS WORKING COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2015-08-19
+Date: 2015-09-16
 """
 
 import sys #for getting script directory
@@ -54,8 +54,8 @@ MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 
 #Flag for mail alerts functionality and list of mailing addresses
 MAIL_ALERTS_ON = False
-SUMMARY_BUILDER_ON = True
-MAILING_LIST = [ 'shanencross@gmail.com' ]
+SUMMARY_BUILDER_ON = False
+MAILING_LIST = [ 'shanencross@gmail.com', 'rstreet@lcogt.net' ]
 
 def main():
 	logger.info("---------------------------------------")
@@ -148,8 +148,9 @@ def evaluateEvent(splitEvent):
 				logger.info("Event is potentially suitable for observation!")
 				if MAIL_ALERTS_ON:
 					logger.info("Mailing event alert...")
-					sendMailAlert(splitEvent)
+					sendMailAlert(values_MOA)
 				if SUMMARY_BUILDER_ON:
+					logger.info("Generating event summary page...")
 					buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
 			else:
 				logger.info("Magnitude fail")
@@ -236,17 +237,19 @@ def checkMag(magValues):
 		return True
 
 #Send mail alert upon detecting short duration microlensing event
-def sendMailAlert(splitEvent):
-	mailSubject = splitEvent[NAME_INDEX] + " - Short Duration Microlensing Event Alert"
-	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
+def sendMailAlert(values_MOA):
+	eventName = values_MOA["name"]
+	mailSubject = eventName + " - Short Duration Microlensing Event Alert"
+	summaryPageURL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + eventName + "_summary.html"
 	messageText = \
 """\
 Short Duration Microlensing Event Alert
 Event Name: %s
 Event ID: %s
-Einstein Time: %s
-MOA Event Page: %s\
-""" % (splitEvent[NAME_INDEX], splitEvent[ID_INDEX], splitEvent[TIME_INDEX], eventPageURL)
+Einstein Time (MOA): %s
+MOA Event Page: %s
+Event summary page: %s\
+""" % (eventName, values_MOA["ID"], values_MOA["tE"], values_MOA["pageURL"], summaryPageURL)
 	mailAlert.send_alert(messageText, mailSubject, MAILING_LIST)
 
 if __name__ == "__main__":
