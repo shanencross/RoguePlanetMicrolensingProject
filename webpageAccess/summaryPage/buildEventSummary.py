@@ -2,7 +2,7 @@
 buildEventSummaryPage.py
 ACTIVE IN-USE COPY
 Author: Shanen Cross
-Date: 2015-09-17
+Date: 2016-03-07
 Purpose: Output summary of event information from different surveys and ARTEMIS as an HTML page
 """
 
@@ -11,8 +11,8 @@ import os #for file-handling
 import requests
 import logging
 import summaryLoggerSetup
-requests.packages.urllib3.disable_warnings()
 from bs4 import BeautifulSoup #html parsing
+requests.packages.urllib3.disable_warnings()
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
@@ -230,6 +230,8 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 		filename = "OB"
 	filename += eventName[2:4] + "%04d" % int(eventName[9:])
 	modelFilepath = os.path.join(ARTEMIS_DIR, filename + ".model")
+	if os.path.isfile(modelFilepath) == False:
+		return None
 	with open(modelFilepath,'r') as file:
 		line = file.readline()
 	entries = line.split()
@@ -286,7 +288,8 @@ Light Curve Zoomed: <br>
 		values_OGLE["tE"], values_OGLE["tE_err"], values_OGLE["u0"], values_OGLE["u0_err"], \
 		values_OGLE["lCurve"], values_OGLE["lCurveZoomed"])
 
-	outputString += \
+	if values_ARTEMIS_MOA is not None:
+		outputString += \
 """\
 <br>
 <br>

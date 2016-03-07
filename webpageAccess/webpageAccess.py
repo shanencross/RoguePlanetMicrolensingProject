@@ -4,7 +4,7 @@ ACTIVE IN-USE COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2015-09-16
+Date: 2016-03-07
 """
 
 import sys #for getting script directory
@@ -151,7 +151,11 @@ def evaluateEvent(splitEvent):
 					sendMailAlert(values_MOA)
 				if SUMMARY_BUILDER_ON:
 					logger.info("Generating event summary page...")
-					buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
+					try:
+						buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
+					except Exception as ex:
+						logger.warning("Exception building event summary:")
+						logger.warning(ex)
 			else:
 				logger.info("Magnitude fail")
 		else:

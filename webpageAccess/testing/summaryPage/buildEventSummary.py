@@ -2,7 +2,7 @@
 buildEventSummaryPage.py
 IN-PROGRESS WORKING COPY
 Author: Shanen Cross
-Date: 2015-09-17
+Date: 2016-03-07
 Purpose: Output summary of event information from different surveys and ARTEMIS as an HTML page
 """
 
@@ -11,8 +11,8 @@ import os #for file-handling
 import requests
 import logging
 import summaryLoggerSetup
-requests.packages.urllib3.disable_warnings()
 from bs4 import BeautifulSoup #html parsing
+requests.packages.urllib3.disable_warnings()
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
@@ -24,11 +24,13 @@ logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FOR
 MAX_MAG_ERR = 0.7
 
 #comment this out when saving as in-use copy
+
 EVENT_FILENAME = "summaryPageTest.html"
 EVENT_DIR = os.path.join(sys.path[0], "summaryPageOutputTests")
 EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
+
 
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
 OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/pages"
@@ -228,6 +230,8 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 		filename = "OB"
 	filename += eventName[2:4] + "%04d" % int(eventName[9:])
 	modelFilepath = os.path.join(ARTEMIS_DIR, filename + ".model")
+	if os.path.isfile(modelFilepath) == False:
+		return None
 	with open(modelFilepath,'r') as file:
 		line = file.readline()
 	entries = line.split()
@@ -284,7 +288,8 @@ Light Curve Zoomed: <br>
 		values_OGLE["tE"], values_OGLE["tE_err"], values_OGLE["u0"], values_OGLE["u0_err"], \
 		values_OGLE["lCurve"], values_OGLE["lCurveZoomed"])
 
-	outputString += \
+	if values_ARTEMIS_MOA is not None:
+		outputString += \
 """\
 <br>
 <br>
@@ -310,6 +315,18 @@ u0: %s +/-%s\
 """ % (values_ARTEMIS_OGLE["name"], values_ARTEMIS_OGLE["tMax"], values_ARTEMIS_OGLE["tMax_err"], \
 									values_ARTEMIS_OGLE["tE"], values_ARTEMIS_OGLE["tE_err"], \
 									values_ARTEMIS_OGLE["u0"], values_ARTEMIS_OGLE["u0_err"])
+
+
+#For testing observation trigger button functionality
+#	outputString += \
+#"""\
+#<br>
+#<br>
+#<form action=http://robonet.lcogt.net/cgi-bin/private/cgiwrap/robouser/buttonTesting.py>
+#<input type = "submit" value = "submit" />
+#</form>\
+#"""
+
 	return outputString
 
 def main():
