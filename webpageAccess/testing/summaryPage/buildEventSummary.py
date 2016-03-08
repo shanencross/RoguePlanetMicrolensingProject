@@ -11,6 +11,7 @@ import os #for file-handling
 import requests
 import logging
 import summaryLoggerSetup
+from datetime import datetime
 from bs4 import BeautifulSoup #html parsing
 requests.packages.urllib3.disable_warnings()
 
@@ -23,22 +24,44 @@ logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FOR
 
 MAX_MAG_ERR = 0.7
 
-#comment this out when saving as in-use copy
+#for accessing URLs; default value is current year, but buildPage() changes this to MOA event name year,
+#in case it has been given an event from a year different year
+CURRENT_YEAR = str(datetime.utcnow().year)
+eventYear = CURRENT_YEAR
 
+#MOA and OGLE directories set to current year by defaultr; 
+#buildPage() changes these if passed event from different year
+MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + eventYear
+OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
+
+#comment this out when saving as in-use copy
 EVENT_FILENAME = "summaryPageTest.html"
 EVENT_DIR = os.path.join(sys.path[0], "summaryPageOutputTests")
 EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
 
-
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
-OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/pages"
+OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventSummaryPages"
+
+#change OUTPUT_DIR to the following when saving as in-use copy.
+
+"""
+#NOTE: Temporarily, output hardcoded to 2015 robonet log directory. Outputting to 2016 folder results in dead links
+#to summaries in email alerts. Only 2015 folder uploads to current URLs. Is the 2016 folder uploading to somewhere
+#else on the server?
+TEMP_YEAR = "2015"
+OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + TEMP_YEAR + "/WWWLogs/eventSummaryPages"
+"""
 
 #values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks
 #values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed, remarks
 def buildPage(eventPageSoup, values_MOA, simulate=True):
 	logger.info("--------------------------------------------")
+
+	#set year to that of MOA event, for accessing URLs, and update MOA/OGLE URl directories
+	updateYear(values_MOA["name"].split("-")[0])
+
 	#update the current MOA values with the remaining ones that still need to be pulled from the webpage 
 	#(the errors, remarks, and lightcurve URL)
 	remainingValues_MOA = getRemainingValues_MOA(eventPageSoup, values_MOA["ID"])
@@ -63,26 +86,37 @@ def buildPage(eventPageSoup, values_MOA, simulate=True):
 		outputFile.write(outputString)
 	logger.info("--------------------------------------------")
 
-#currently return dict of tMax err, tE err, u0 err, remarks, and lCurve URL, given soup and ID --
-#Perhaps later, should be updated to return dict of all missing entries, g
-#given a partially full MOA values dict?
+#Update year and associated global URLs
+def updateYear(newYear):
+	global eventYear
+	eventYear = newYear
 
+	global MOA_dir
+	MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + eventYear
+
+	#OGLE dir remains unchanged unless event year differs rom the current year
+	if eventYear != CURRENT_YEAR:
+		global OGLE_dir
+		OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/" + eventYear
+
+#currently return dict of tMax err, tE err, u0 err, remarks, and lCurve URL, given soup and ID --
+#Perhaps later, should be updated to return dict of all missing entries,
+#given a partially full MOA values dict?
 def getRemainingValues_MOA(eventPageSoup, ID):
 	microTable = eventPageSoup.find(id="micro").find_all('tr')
 	tMaxJD_err = float(microTable[0].find_all('td')[4].string.split()[0])
 	tE_err = float(microTable[1].find_all('td')[4].string.split()[0])
 	u0_err = float(microTable[2].find_all('td')[4].string)
 	remarks = str(eventPageSoup.find_all("table")[1].find("td").string)
-	lCurvePlotURL = "https://it019909.massey.ac.nz/moa/alert2015/datab/plot-" + ID + ".png"
+	lCurvePlotURL = MOA_dir + "/datab/plot-" + ID + ".png"
 	updateValues = {"tMax_err": tMaxJD_err, "tE_err": tE_err, "u0_err": u0_err, "lCurve": lCurvePlotURL, "remarks": remarks}
 	logger.debug("Updated values: " + str(updateValues))
 	return updateValues
 
 def MOA_to_OGLE(eventName):
-	crossReferenceURL = "https://it019909.massey.ac.nz/moa/alert2015/moa2ogle.txt"
+	crossReferenceURL = MOA_dir + "/moa2ogle.txt"
 	crossReferenceRequest = requests.get(crossReferenceURL, verify=False)
 	crossReference = crossReferenceRequest.content.splitlines()
-
 	eventName_MOA = "MOA-" + eventName
 	eventName_OGLE = ""
 	for line in reversed(crossReference):
@@ -103,11 +137,10 @@ def MOA_to_OGLE(eventName):
 
 def getValues_OGLE(eventName):
 	nameURL = eventName[5:].lower()
-	eventURL = "http://ogle.astrouw.edu.pl/ogle4/ews/" + nameURL + ".html"
+	eventURL = OGLE_dir + "/" + nameURL + ".html"
 	request = requests.get(eventURL, verify=False)
 	page = request.content
 	soup = BeautifulSoup(page, 'lxml')
-
 	tables = soup.find_all("table")
 	introTable = tables[1]
 	remarks = str(introTable.find_all('tr')[4].find_all("td")[1].string)
@@ -127,8 +160,8 @@ def getValues_OGLE(eventName):
 	tauValues = parseValues_OGLE(tauColumns)
 	u0Values = parseValues_OGLE(u0Columns)
 
-	lCurvePlotURL = "http://ogle.astrouw.edu.pl/ogle4/ews/data/2015/" + nameURL + "/lcurve.gif"
-	lCurvePlotZoomedURL = "http://ogle.astrouw.edu.pl/ogle4/ews/data/2015/" + nameURL + "/lcurve_s.gif"
+	lCurvePlotURL = OGLE_dir + "/data/" + eventYear + "/" + nameURL + "/lcurve.gif"
+	lCurvePlotZoomedURL = OGLE_dir + "/data/" + eventYear + "/" + nameURL + "/lcurve_s.gif"
 
 	values = {"name": eventName, "pageURL": eventURL, "remarks": remarks, \
 								 "tMax": TmaxValues[0], "tMax_err": TmaxValues[1], \
@@ -145,7 +178,7 @@ def parseValues_OGLE(columns):
 	return (val, valErr)
 
 def getValues_MOA(ID):
-	nameURL = "https://it019909.massey.ac.nz/moa/alert2015/display.php?id=" + ID
+	nameURL = MOA_dir + "/display.php?id=" + ID
 	request = requests.get(nameURL, verify=False)
 	page = request.content
 	soup = BeautifulSoup(page, 'lxml')
@@ -177,7 +210,7 @@ def getValues_MOA(ID):
 	assessment = soup.find(string="Current assessment:").next_element.string
 	remarks = str(soup.find_all("table")[1].find("td").string)
 
-	lCurvePlotURL = "https://it019909.massey.ac.nz/moa/alert2015/datab/plot-" + ID + ".png"
+	lCurvePlotURL = MOA_dir + "/datab/plot-" + ID + ".png"
 	values_MOA = {"name": eventName, "pageURL": nameURL, 
 				  "tMax": tMaxJD_values[0], "tMax_err": tMaxJD_values[1], \
 				  "tE": tE_values[0], "tE_err": tE_values[1], \
@@ -334,7 +367,8 @@ def main():
 
 def test1():
 	#MOA 2015-BLG-501
-	testID = "gb1-R-4-32414"
+	testID = "gb4-R-8-58133"
+	#updateYear("2015")
 	values_MOA = getValues_MOA(testID)
 	name_OGLE = MOA_to_OGLE(values_MOA["name"])
 	values_OGLE = getValues_OGLE(name_OGLE)

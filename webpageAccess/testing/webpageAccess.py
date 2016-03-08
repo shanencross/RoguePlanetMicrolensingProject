@@ -7,16 +7,25 @@ Author: Shanen Cross
 Date: 2016-03-07
 """
 
+"""
+Note: Does not currently account for corresponding MOA and OGLE events possibly having different years.
+For instance, some 2016 MOA events have 2015 OGLE counterparts.
+This script will detect no OGLE counterpart for such a MOA event.
+It will also ignore any MOA event prior to the current year, regardless of whether its OGLE
+counterpart are listed in the current year.
+"""
+
 import sys #for getting script directory
 import os #for file-handling
 import logging
 import loggerSetup
 import requests #for fetching webpages
-requests.packages.urllib3.disable_warnings() #to disable warnings when accessing insecure sites
 from bs4 import BeautifulSoup #html parsing
 from astropy.time import Time #not used yet, may need eventually for manipulating dates
+from datetime import datetime
 import mailAlert #for sending email alerts
 from summaryPage import buildEventSummary
+requests.packages.urllib3.disable_warnings() #to disable warnings when accessing insecure sites
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
@@ -32,8 +41,11 @@ EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
 
+#set year as constant using current date/time, for accessing URLs
+CURRENT_YEAR = str(datetime.utcnow().year)
+
 #setup URL paths for website event index and individual pages
-WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert2015/"
+WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert" + CURRENT_YEAR + "/"
 INDEX_URL_DIR= "/index.dat"
 INDEX_URL = WEBSITE_URL + INDEX_URL_DIR
 EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id number attached to end
@@ -55,7 +67,7 @@ MAX_MAG_ERR = 0.7 #magnitude unites - maximum error allowed for a mag
 #Flag for mail alerts functionality and list of mailing addresses
 MAIL_ALERTS_ON = False
 SUMMARY_BUILDER_ON = True
-MAILING_LIST = [ 'shanencross@gmail.com', 'rstreet@lcogt.net' ]
+MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 
 def main():
 	logger.info("---------------------------------------")
