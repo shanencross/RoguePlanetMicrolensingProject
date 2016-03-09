@@ -1,8 +1,9 @@
 """
 loggerSetup.py
-Purpose: Set up logger for webpageAccessTesting.py
+ACTIVE IN-USE COPY
+Purpose: Set up logger for webpageAccess.py and buildEventSummary.py
 Author: Shanen Cross
-Date: 2015-07-28
+Date: 2017-03-08
 """
 import sys
 import os
@@ -40,5 +41,23 @@ def setup(loggerName, logDir, logName, logDateTimeFormat):
 		consoleFormatter = logging.Formatter(fmt="%(levelname)s - %(message)s")
 		consoleHandler.setFormatter(consoleFormatter)
 		logger.addHandler(consoleHandler)
+
+	"""This prevents logger from duplicating command line output. For example, if you call logger.info("Hello world") without this
+	from webpageAccess.py after setting up the logger, the command line output will look like:
+
+	INFO - Hello world
+	INFO:__main__:Hello world
+
+	...but the log on file will read:
+
+	INFO - Hello world
+
+	...as it should.
+
+	This only occurs if I have imported anything from the K2fov module. If I remove the import, logger works as it should without duplication.
+	My other imports don't affect the logger and I don't know why importing K2fov (or its submodules) affects the logger like this. 
+	Setting propagate to False appears to stop the duplication, at least.
+	"""
+	logger.propagate = False
 
 	return logger

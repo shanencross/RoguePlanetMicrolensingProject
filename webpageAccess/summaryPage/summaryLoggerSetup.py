@@ -1,8 +1,9 @@
 """
-loggerSetup.py
+summaryLoggerSetup.py
+ACTIVE IN-USE COPY
 Purpose: Set up logger for webpageAccessTesting.py
 Author: Shanen Cross
-Date: 2015-07-28
+Date: 2016-03-08
 """
 import sys
 import os
@@ -40,5 +41,12 @@ def setup(loggerName, logDir, logName, logDateTimeFormat):
 		consoleFormatter = logging.Formatter(fmt="%(levelname)s - %(message)s")
 		consoleHandler.setFormatter(consoleFormatter)
 		logger.addHandler(consoleHandler)
+
+	"""If propagate is not set to False, buildEventSummaryPage.py will somehow output to console regardless of whether flag is
+	off or on. It's probably the case it outputs duplicate entries in the manner described in loggerSetup.py if the flag
+	is on, but I haven't tested this. This is likely related to/the same phenomenon as that described in loggerSetup.py,
+	so read my comments there about setting propagate to False.
+	"""	
+	logger.propagate = False
 
 	return logger

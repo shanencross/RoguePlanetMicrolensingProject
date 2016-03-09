@@ -4,7 +4,7 @@ IN-PROGRESS WORKING COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2016-03-07
+Date: 2016-03-08
 """
 
 """
@@ -18,13 +18,15 @@ counterpart are listed in the current year.
 import sys #for getting script directory
 import os #for file-handling
 import logging
-import loggerSetup
 import requests #for fetching webpages
-from bs4 import BeautifulSoup #html parsing
-from astropy.time import Time #not used yet, may need eventually for manipulating dates
-from datetime import datetime
-import mailAlert #for sending email alerts
-from summaryPage import buildEventSummary
+from bs4 import BeautifulSoup #html parsing dates
+from datetime import datetime #for getting current year for directories and URLs
+from K2fov.c9 import inMicrolensRegion #K2 tool for checking if given RA and Dec coordinates are in K2 Campaign 9 microlensing region
+
+#local script imports
+import loggerSetup #setting up logger
+from summaryPage import buildEventSummary #generating summary page for event
+
 requests.packages.urllib3.disable_warnings() #to disable warnings when accessing insecure sites
 
 #create and set up filepath and directory for logs -
@@ -54,6 +56,8 @@ EVENT_PAGE_URL_DIR = "/display.php?id=" #event page URL path is this with id num
 #for index.dat file (zero-based counting)
 NAME_INDEX = 0
 ID_INDEX = 1
+RA_INDEX = 2
+DEC_INDEX = 3
 TMAX_INDEX = 4
 TIME_INDEX = 5
 U0_INDEX = 6
@@ -91,7 +95,7 @@ def main():
 			eventFile.write(newestEvent)
 
 	else:
-		#open event file fir reading and writing
+		#open event file for reading and writing
 		with open(EVENT_FILEPATH, 'r') as eventFile:
 			localEvent = eventFile.read()
 		if newestEvent != localEvent:
@@ -107,8 +111,8 @@ def main():
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
 
-#check over new events, evaluating each for observation triggering
 def checkEvents(localEvent, index):
+	"""Check new events, evaluating each for observation triggering."""
 	localEventSplit = localEvent.split()
 	newestEventSplit = index[-1].split()
 	#check that event line has enough elements to have name listed
@@ -132,74 +136,102 @@ def checkEvents(localEvent, index):
 		#evaluate current event for observation triggering
 		evaluateEvent(currentEventSplit)
 
-#evaluate whether event is short enough to potentially indicate a rogue planet
-#and whether it is bright enough to be worth further observation
 def evaluateEvent(splitEvent):
+	"""Evaluate whether event is short enough to potentially indicate a rogue planet
+	and whether it is bright enough to be worth further observation.
+	"""
 	logger.info("")
 	logger.info("Event Evaluation:")
-	#print "Event to be evaluated:\n" + ' '.join(splitEvent)
-	logger.info("Event Name: " + splitEvent[NAME_INDEX])
-	logger.info("Event ID: " + splitEvent[ID_INDEX])
-	#print "Einsten time: " + splitEvent[TIME_INDEX]
-	#print "Baseline magnitude: " + splitEvent[BASELINE_MAG_INDEX]
-	values_MOA = {"name": splitEvent[NAME_INDEX], "ID": splitEvent[ID_INDEX], "tMax": splitEvent[TMAX_INDEX], \
-											      "tE": splitEvent[TIME_INDEX], "u0": splitEvent[U0_INDEX]}
+
+	#place relevant values from event row in MOA table into dictionary as strings for ease of access
+	values_MOA = {"name": splitEvent[NAME_INDEX], "ID": splitEvent[ID_INDEX], "RA": splitEvent[RA_INDEX], \
+				  "Dec": splitEvent[DEC_INDEX], "tMax": splitEvent[TMAX_INDEX], "tE": splitEvent[TIME_INDEX], \
+				  "u0": splitEvent[U0_INDEX]}
+
+	logger.info("Event Name: " + values_MOA["name"])
+	logger.info("Event ID: " + values_MOA["ID"])
+
 	#evaluate Einstein time, microlensing vs. cv status, and magnitude
 	#for whether to trigger observation
-	if checkEinsteinTime(splitEvent):
-		eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + splitEvent[ID_INDEX]
-		values_MOA["pageURL"] = eventPageURL
-		eventPageSoup = BeautifulSoup(requests.get(eventPageURL, verify=False).content, 'lxml')
-		assessment = getMicrolensingAssessment(eventPageSoup)
-		values_MOA["assessment"] = assessment
-		if isMicrolensing(assessment):
-			magValues = getMag(eventPageSoup)
-			values_MOA["mag"] = magValues[0]
-			values_MOA["mag_err"] = magValues[1]
-			if checkMag(magValues):
-				logger.info("Event is potentially suitable for observation!")
-				if MAIL_ALERTS_ON:
-					logger.info("Mailing event alert...")
-					sendMailAlert(values_MOA)
-				if SUMMARY_BUILDER_ON:
-					logger.info("Generating event summary page...")
-					try:
-						buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
-					except Exception as ex:
-						logger.warning("Exception building event summary:")
-						logger.warning(ex)
-			else:
-				logger.info("Magnitude fail")
+	if checkEinsteinTime(values_MOA["tE"]):
+		if checkMicrolensRegion(values_MOA["RA"], values_MOA["Dec"]):
+			evaluateEventPage_MOA(values_MOA)
 		else:
-			logger.info("Not microlensing")
+			logger.info("Microlensing region failed: Not in K2 Campaign 9 microlensing region")
+	#fail to trigger if Einstein time is unacceptable
 	else:
-		logger.info("Einstein time fail")
+		logger.info("Einstein time failed: must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
 
-#check if Einstein time is fall enough for observation
-def checkEinsteinTime(splitEvent):
-	einsteinTime = float(splitEvent[TIME_INDEX])
-	logger.info("Einstein Time: " + str(einsteinTime))
+def checkEinsteinTime(tE_string):
+	"""Check if Einstein time is fall enough for observation."""
+	einsteinTime = float(tE_string)
+	logger.info("Einstein Time: " + str(einsteinTime) + " days")
 	if einsteinTime <= MAX_EINSTEIN_TIME:
 		return True
 	else:
 		return False
 
+def checkMicrolensRegion(RA_string, Dec_string):
+	"""Check if strings RA and Dec coordinates are within K2 Campaign 9 microlensing region (units: degrees)."""
+	#Convert strings to floats and output to logger
+	RA = float(RA_string)
+	Dec = float(Dec_string)
+	logger.info("RA: " + str(RA) + "      Dec: " + str(Dec) + "      (Units: Degrees)")
+
+	#pass to K2fov.c9 module method (from the K2 tools) to get whether coordinates are in the region
+	return inMicrolensRegion(RA, Dec)
+
+
+def evaluateEventPage_MOA(values_MOA):
+	"""Continue evaluating event using information from the MOA event page."""
+	#access MOA event page and get soup of page for parsing more values
+	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + values_MOA["ID"]
+	values_MOA["pageURL"] = eventPageURL
+	eventPageSoup = BeautifulSoup(requests.get(eventPageURL, verify=False).content, 'lxml')
+
+	#Parse page soup for microlensing assessment of event
+	assessment = getMicrolensingAssessment(eventPageSoup)
+	values_MOA["assessment"] = assessment
+
+	if isMicrolensing(assessment):
+		#parse page soup for magnitude and error of most recent observation of event
+		magValues = getMag(eventPageSoup)
+		values_MOA["mag"] = magValues[0]
+		values_MOA["mag_err"] = magValues[1]
+
+		#trigger if magnitude matches critera along with the preceding checks
+		if checkMag(magValues):
+			eventTrigger(eventPageSoup, values_MOA)
+
+		#fail to trigger if magn and/or mag error values are unacceptable
+		else:
+			logger.info("Magnitude failed: must be brighter than " + str(MIN_MAG) + " AND have error less than " + str(MAX_MAG_ERR))
+
+	#fail to trigger of assessment is non-microlensing
+	else:
+		logger.info("Assessment failed: Not assessed as microlensing")
+
 def getMicrolensingAssessment(eventPageSoup):
+	"""Get assessment of whether an event is microlensing. Could be microlensing, cv, microlensing/cv, 
+	or possibly something else.
+	"""
 	assessment = eventPageSoup.find(string="Current assessment:").next_element.string
 	return assessment
 
-#check if event is microlensing, cv, a combination of the two, or unknown
-#Should this return true or false if event is "microlensing/cv" (currently returns true)?
 def isMicrolensing(assessment):
+	"""Check if event is microlensing, cv, a combination of the two, or unknown -
+    Should this return true or false if event is "microlensing/cv" (currently returns true)?
+	"""
 	logger.info("Current assessment: " + assessment)
 	if assessment == "microlensing" or assessment == "microlensing/cv":
 		return True
 	else:
 		return False
 
-#return magnitude and error of last photometry measurement whose error is not too large -
-#if all found values are too large, returns false boolean as well
 def getMag(eventPageSoup):
+	"""Return magnitude and error of last photometry measurement whose error is not too large -
+	if all found values are too large, returns false boolean as well.
+	"""
 	#Each magnitude is word 0 of string in table 3, row i, column 1 (zero-based numbering),
 	#where i ranges from 2 through len(rows)-1 (inclusive).
 	#Each error is word 1 of the same string.
@@ -232,8 +264,8 @@ def getMag(eventPageSoup):
 		magValues = None
 	return magValues
 
-#check if magnitude is bright enough for observation
 def checkMag(magValues):
+	"""Check if magnitude is bright enough for observation."""
 	#logger.debug("Returned mag array: " + str(magValues))
 	#if no magnitudes were found
 	if magValues is None:
@@ -252,8 +284,22 @@ def checkMag(magValues):
 	else:
 		return True
 
-#Send mail alert upon detecting short duration microlensing event
+def eventTrigger(eventPageSoup, values_MOA):
+	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
+	logger.info("Event is potentially suitable for observation!")
+	if MAIL_ALERTS_ON:
+		logger.info("Mailing event alert...")
+		sendMailAlert(values_MOA)
+	if SUMMARY_BUILDER_ON:
+		logger.info("Generating event summary page...")
+		try:
+			buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
+		except Exception as ex:
+			logger.warning("Exception building event summary:")
+			logger.warning(ex)
+
 def sendMailAlert(values_MOA):
+	"""Send mail alert upon detecting short duration microlensing event"""
 	eventName = values_MOA["name"]
 	mailSubject = eventName + " - Short Duration Microlensing Event Alert"
 	summaryPageURL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + eventName + "_summary.html"
