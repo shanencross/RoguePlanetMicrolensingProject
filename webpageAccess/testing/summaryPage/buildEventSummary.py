@@ -5,7 +5,6 @@ Author: Shanen Cross
 Date: 2016-03-07
 Purpose: Output summary of event information from different surveys and ARTEMIS as an HTML page
 """
-
 import sys #for getting script directory
 import os #for file-handling
 import requests
@@ -43,15 +42,16 @@ if not os.path.exists(EVENT_DIR):
 
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
 OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventSummaryPages"
-
 #change OUTPUT_DIR to the following when saving as in-use copy.
-
 """
-#NOTE: Temporarily, output hardcoded to 2015 robonet log directory. Outputting to 2016 folder results in dead links
-#to summaries in email alerts. Only 2015 folder uploads to current URLs. Is the 2016 folder uploading to somewhere
+#NOTE: Temporarily, output hardcoded to 2015 robonet log directory with TEMP_YEAR. Outputting to 2016 folder results 
+#in dead links #to summaries in email alerts. Only 2015 folder uploads to current URLs. Is the 2016 folder uploading to somewhere
 #else on the server?
-TEMP_YEAR = "2015"
-OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + TEMP_YEAR + "/WWWLogs/eventSummaryPages"
+
+#NOTE 2: TEMP_YEAR isn't working anymore, so perhaps they updated things? No files from the 2015 folder or on the 
+#server anymore, only those in the 2016 folder. Now using CURRENT_YEAR instead.
+#TEMP_YEAR = "2015"
+OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/eventSummaryPages"
 """
 
 #values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks
@@ -142,6 +142,7 @@ def getValues_OGLE(eventName):
 	page = request.content
 	soup = BeautifulSoup(page, 'lxml')
 	tables = soup.find_all("table")
+	logger.debug(str(soup))
 	introTable = tables[1]
 	remarks = str(introTable.find_all('tr')[4].find_all("td")[1].string)
 	#remarks = str(soup.find(string="Remarks       ").next_element.string)
@@ -286,8 +287,7 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 #values_ARTEMIS_MOA: name, tMax, tE, u0
 def buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE):
 	outputString = \
-"""\
-MOA event: <br>
+"""MOA event: <br>
 Event: <a href=%s>%s</a> <br>
 Assessment: %s <br>
 Remarks: %s <br>
@@ -367,8 +367,9 @@ def main():
 
 def test1():
 	#MOA 2015-BLG-501
-	testID = "gb4-R-8-58133"
+	#testID = "gb4-R-8-58133"
 	#updateYear("2015")
+	testID = "gb14-R-2-53554"	
 	values_MOA = getValues_MOA(testID)
 	name_OGLE = MOA_to_OGLE(values_MOA["name"])
 	values_OGLE = getValues_OGLE(name_OGLE)
@@ -394,4 +395,3 @@ def test1():
 
 if __name__ == "__main__":
 	main()
-
