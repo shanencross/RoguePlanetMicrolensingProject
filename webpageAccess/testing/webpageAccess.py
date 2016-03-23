@@ -23,7 +23,7 @@ from K2fov.c9 import inMicrolensRegion # K2 tool for checking if given RA and De
 
 # local script imports
 import loggerSetup # setting up logger
-from summaryPage import buildEventSummary # generating summary page for event
+from dataCollectionAndOutput import collectEventData # collecting data from survey sites and ARTEMIS, as well as outputting HTML summary page and event trigger record .csv
 import mailAlert # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
@@ -70,6 +70,7 @@ MAX_MAG_ERR = 0.7 # magnitude unites - maximum error allowed for a mag
 # Flag for mail alerts functionality and list of mailing addresses
 MAIL_ALERTS_ON = False
 SUMMARY_BUILDER_ON = True
+EVENT_TRIGGER_RECORD_ON = True
 MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 
 def main():
@@ -289,12 +290,18 @@ def eventTrigger(eventPageSoup, values_MOA):
 	if MAIL_ALERTS_ON:
 		logger.info("Mailing event alert...")
 		sendMailAlert(values_MOA)
-	if SUMMARY_BUILDER_ON:
-		logger.info("Generating event summary page...")
+	if SUMMARY_BUILDER_ON or EVENT_TRIGGER_RECORD_ON:
+		logger.info("Collecting further data from survey site(s) and ARTEMIS if available...")
 		try:
-			buildEventSummary.buildPage(eventPageSoup, values_MOA, simulate=True)
+			dataDict = collectEventData.collectData(eventPageSoup, values_MOA, simulate=True)
+			if SUMMARY_BUILDER_ON:
+				logger.info("Building event summary page...")
+				collectEventData.buildSummary(dataDict)
+			if EVENT_TRIGGER_RECORD_ON:
+				logger.info("Outputting .csv record of event triggers...")
+				collectEventData.outputTable(dataDict)
 		except Exception as ex:
-			logger.warning("Exception building event summary:")
+			logger.warning("Exception collecting data and building event summary and/or event trigger record")
 			logger.warning(ex)
 
 def sendMailAlert(values_MOA):

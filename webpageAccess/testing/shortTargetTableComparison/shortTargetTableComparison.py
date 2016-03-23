@@ -6,16 +6,18 @@ Author: Shanen Cross
 Date: 2016-03-18
 """
 import requests
+import csv
 import os
 from bs4 import BeautifulSoup
 
 # local script imports
 from compareEventTables import compareEvents
+from dataCollectionAndOutput import collectEventData
 
 FILENAME = "targetListComparison.txt"
 TAP_TARGET_TABLE_URL = "http://robonet.lcogt.net/temp/tap1mlist_kepler_short.html"
 TEST_TAP_TARGET_TABLE_FILEPATH =  "TAP - potential Kepler events.html"
-TAPtargets = []
+TAPtargetList = []
 
 # set up and create ouptut directory and filename for TAP target table
 TAP_TARGET_TABLE_OUTPUT_FILENAME + "TAP_target_table.csv"
@@ -43,6 +45,8 @@ def updateTable():
 		eventMag = eventLines[9].string
 		event_tE = eventLines[15].string
 		event_tE_err = eventLines[16].string
+
+		
 		eventDict = {"name_TAP": eventName, "priority": eventPriority, "mag_TAP": eventMag, "tE_TAP": event_tE, "tE_err_TAP": event_tE_err}
 		TAPtargetList.append(eventDict)
 
@@ -98,7 +102,26 @@ def printTable():
 		print
 
 def saveTable():
-	with open (
+	namefields = ["name_TAP", "priority", "mag_TAP", "tE_TAP", "tE_err_TAP"]
+	if os.isfile(TAP_TARGET_OUTPUT_FILEPATH):
+		with open(TAP_TARGET_OUTPUT_FILEPATH, "r") as f:
+			reader = csv.DictReader(f)
+			onlineTAPname_set = set()
+			for row in reader:
+				onlineTAPname_set.add(row["name_TAP"])				
+	
+			localTAPname_set = set()
+			for event in TAPtargetList:
+				localTAPname_set.add(event["name_TAP"])
+
+		with open(TAP_TARGET_OUTPUT_FILEPATH, "w") as f:
+			writer =csv.DictWriter(f, namefields=namefields):
+									
+	else:
+		with open(TAP_TARGET_OUTPUT_FILEPATH, "w") as f:
+			writer = csv.DictWriter(f, namefields=namefields)
+			for event in TAPtargetList:
+				writer.writerow(event)
 
 def main():
 	updateTable()
