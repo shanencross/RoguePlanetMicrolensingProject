@@ -176,7 +176,7 @@ def getRemainingValues_MOA(eventPageSoup, ID):
 	logger.debug("Updated values: " + str(updateValues))
 	return updateValues
 
-def convertEventName(eventName, MOAtoOGLE==True):
+def convertEventName(eventName, MOAtoOGLE=True):
 	crossReferenceURL = MOA_dir + "/moa2ogle.txt"
 	crossReferenceRequest = requests.get(crossReferenceURL, verify=False)
 	crossReference = crossReferenceRequest.content.splitlines()
@@ -201,7 +201,7 @@ def convertEventName(eventName, MOAtoOGLE==True):
 	if eventName_final == "":
 		return None
 	else:
-		eventName_output = eventName_final[(len(eventName_final) + 1):]
+		eventName_output = eventName_final[(len(finalSurvey) + 1):]
 		logger.debug(initialSurvey + " to " + finalSurvey + " converted name: " + str(eventName_final))
 		return eventName_output
 
