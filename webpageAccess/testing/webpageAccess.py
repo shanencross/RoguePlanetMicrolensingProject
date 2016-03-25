@@ -43,7 +43,8 @@ if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
 
 # set year as constant using current date/time, for accessing URLs
-CURRENT_YEAR = str(datetime.utcnow().year)
+#CURRENT_YEAR = str(datetime.utcnow().year)
+CURRENT_YEAR = "2015"
 
 # setup URL paths for website event index and individual pages
 WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert" + CURRENT_YEAR + "/"
@@ -71,6 +72,7 @@ MAX_MAG_ERR = 0.7 # magnitude unites - maximum error allowed for a mag
 MAIL_ALERTS_ON = False
 SUMMARY_BUILDER_ON = True
 EVENT_TRIGGER_RECORD_ON = True
+EVENT_TABLE_COMPARISON_ON = True
 MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 
 def main():
@@ -289,20 +291,45 @@ def eventTrigger(eventPageSoup, values_MOA):
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_ALERTS_ON:
 		logger.info("Mailing event alert...")
-		sendMailAlert(values_MOA)
+		try:
+			sendMailAlert(values_MOA)
+		except Exception as ex:
+			logger.warning("Exception attempting to mail event alert")
+			logger.warning(ex)
+
 	if SUMMARY_BUILDER_ON or EVENT_TRIGGER_RECORD_ON:
 		logger.info("Collecting further data from survey site(s) and ARTEMIS if available...")
 		try:
 			dataDict = collectEventData.collectData(eventPageSoup, values_MOA, simulate=True)
-			if SUMMARY_BUILDER_ON:
-				logger.info("Building and outputting event summary page...")
-				collectEventData.buildSummary(dataDict)
-			if EVENT_TRIGGER_RECORD_ON:
-				logger.info("Outputting event to .csv record of event triggers...")
-				collectEventData.outputTable(dataDict)
 		except Exception as ex:
-			logger.warning("Exception collecting data and building/outputting event summary and/or event trigger record")
+			logger.warning("Exception collecting data from survey site(s) and/or ARTEMIS")
 			logger.warning(ex)
+			return
+
+		if SUMMARY_BUILDER_ON:
+			logger.info("Building and outputting event summary page...")
+			try:
+				collectEventData.buildSummary(dataDict)
+			except Exception as ex:
+				logger.warning("Exception building/outputting event summary")
+				logger.warning(ex)
+
+		if EVENT_TRIGGER_RECORD_ON:
+			logger.info("Outputting event to .csv record of event triggers...")
+			try:
+				collectEventData.outputTable(dataDict)
+			except Exception as ex:
+				logger.warning("Exception outputting .csv record of event triggers")
+				logger.warning(ex)
+				return
+
+			if EVENT_TABLE_COMPARISON_ON:
+				logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
+				try:
+					pass
+				except Exception as ex:
+					logger.warning("Exception generating/outputting comparison table HTML page")
+					logger.warning(ex)
 
 def sendMailAlert(values_MOA):
 	"""Send mail alert upon detecting short duration microlensing event"""

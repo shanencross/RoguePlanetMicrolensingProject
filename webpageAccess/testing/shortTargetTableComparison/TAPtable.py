@@ -11,7 +11,7 @@ import csv
 from bs4 import BeautifulSoup
 
 # local script imports
-from compareEventTables import compareEvents
+#from compareEventTables import compareEvents
 #from dataCollectionAndOutput import collectEventData
 
 FILENAME = "targetListComparison.txt"
@@ -26,7 +26,7 @@ TAP_TARGET_TABLE_OUTPUT_FILEPATH = os.path.join(TAP_TARGET_TABLE_OUTPUT_DIR, TAP
 if not os.path.exists(TAP_TARGET_TABLE_OUTPUT_DIR):
 	os.makedirs(TAP_TARGET_TABLE_OUTPUT_DIR)
 
-LOCAL_TEST_ONLY = True
+LOCAL_TEST_ONLY = False
 
 def updateTable():
 

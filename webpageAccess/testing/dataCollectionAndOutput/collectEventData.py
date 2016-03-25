@@ -29,12 +29,14 @@ MAX_MAG_ERR = 0.7
 #for accessing URLs; default value is current year, but buildPage() changes this to MOA event name year,
 #in case it has been given an event from a year different year
 CURRENT_YEAR = str(datetime.utcnow().year)
+CURRENT_YEAR = "2015"
 eventYear = CURRENT_YEAR
 
 #MOA and OGLE directories set to current year by defaultr; 
 #buildPage() changes these if passed event from different year
 MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + eventYear
-OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
+#OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
+OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015"
 
 #comment this out when saving as in-use copy
 EVENT_FILENAME = "summaryPageTest.html"
@@ -99,8 +101,8 @@ def collectData(eventPageSoup, values_MOA, simulate=True):
 
 	return output_dict
 
-def buildSummary(values_dict):	
-	outputString = buildOutputString(values_dict["MOA"], values_dict["OGLE"], values_dict["ARTEMIS_MOA"], values_dict["ARTEMIS_OGLE"])
+def buildSummary(values_dict):
+	outputString = buildOutputString(values_dict)
 	logger.info("Output:\n" + outputString)
 	
 	if not os.path.exists(SUMMARY_OUTPUT_DIR):
@@ -193,9 +195,9 @@ def convertEventName(eventName, MOAtoOGLE=True):
 		if line[0] != "#":
 			lineSplit = line.split()
 			if lineSplit[0] == eventName_initial:
-				eventName_final = linesplit[2]
+				eventName_final = lineSplit[2]
 				break
-			if linesplit[2] == eventname_initial:
+			if lineSplit[2] == eventName_initial:
 				eventName_final = lineSplit[0]
 				break
 	if eventName_final == "":
@@ -355,8 +357,31 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 #values_MOA keywords: name, assessment, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, lCurve, RA, Dec
 #values_OGLE keywords: name, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed
 #values_ARTEMIS_MOA: name, tMax, tE, u0
-def buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE):
-	outputString = \
+def buildOutputString(values_dict):
+	if values_dict.has_key("MOA"):
+		values_MOA = values_dict["MOA"]
+	else:
+		values_MOA = None
+
+	if values_dict.has_key("OGLE"):
+		values_OGLE = values_dict["OGLE"]
+	else:
+		values_OGLE = None
+
+	if values_dict.has_key("ARTEMIS_MOA"):
+		values_ARTEMIS_MOA = values_dict["ARTEMIS_MOA"]
+	else:
+		values_ARTEMIS_MOA = None
+
+	if values_dict.has_key("ARTEMIS_OGLE"):
+		values_ARTEMIS_OGLE = values_dict["ARTEMIS_OGLE"]
+	else:
+		values_ARTEMIS_OGLE = None
+
+	outputString = ""
+
+	if values_MOA is not None:
+		outputString += \
 """MOA event: <br>
 Event: <a href=%s>%s</a> <br>
 Assessment: %s <br>
@@ -370,7 +395,6 @@ Light Curve: <br>
 """ % (values_MOA["pageURL"], values_MOA["name"], values_MOA["assessment"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
 		values_MOA["tE"], values_MOA["tE_err"], values_MOA["u0"], values_MOA["u0_err"], values_MOA["mag"], values_MOA["mag_err"], \
 		values_MOA["lCurve"])
-
 
 	if values_OGLE is not None:
 		outputString += \
