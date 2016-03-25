@@ -203,7 +203,7 @@ def evaluateEventPage_MOA(values_MOA):
 		if checkMag(magValues):
 			eventTrigger(eventPageSoup, values_MOA)
 
-		# fail to trigger if magn and/or mag error values are unacceptable
+		# fail to trigger if mag and/or mag error values are unacceptable
 		else:
 			logger.info("Magnitude failed: must be brighter than " + str(MIN_MAG) + " AND have error less than " + str(MAX_MAG_ERR))
 
@@ -295,13 +295,13 @@ def eventTrigger(eventPageSoup, values_MOA):
 		try:
 			dataDict = collectEventData.collectData(eventPageSoup, values_MOA, simulate=True)
 			if SUMMARY_BUILDER_ON:
-				logger.info("Building event summary page...")
+				logger.info("Building and outputting event summary page...")
 				collectEventData.buildSummary(dataDict)
 			if EVENT_TRIGGER_RECORD_ON:
-				logger.info("Outputting .csv record of event triggers...")
+				logger.info("Outputting event to .csv record of event triggers...")
 				collectEventData.outputTable(dataDict)
 		except Exception as ex:
-			logger.warning("Exception collecting data and building event summary and/or event trigger record")
+			logger.warning("Exception collecting data and building/outputting event summary and/or event trigger record")
 			logger.warning(ex)
 
 def sendMailAlert(values_MOA):
