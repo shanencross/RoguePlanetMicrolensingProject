@@ -4,6 +4,18 @@
 TEST_EVENT_LIST = [{"name":"MOA-123", "local":"yes", "TAP":"no"}, {"name":"OGLE-123", "local":"yes", "TAP":"yes"}, {"name":"OGLE-224", "local":"no", "TAP":"yes"}]
 TEST_COMPARISON_PAGE_FILEPATH = "tableOutput_test.html"
 
+"""
+ROGUE fieldnames: ["name_MOA", "name_OGLE", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
+				  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
+				  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"] 
+
+TAP fieldnames:
+				  ["name_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP"]
+
+"""
+
+combined_fieldnames = ["name_MOA", "name_OGLE", 
+
 def outputComparisonPage(eventList, comparisonPageFilepath):
 	with open(comparisonPageFilepath, "w") as myFile:
 		printPageStart(myFile)

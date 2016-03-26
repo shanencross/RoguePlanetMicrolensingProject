@@ -117,7 +117,6 @@ def outputTable(input_dict):
 	logger.info("Outputting table...")
 	output_dict = {}
 	
-
 #name_MOA, pageURL_MOA, tMax_MOA, tMax_err_MOA, tE_MOA, tE_err_MOA, u0_MOA, u0_err_MOA, mag_MOA, mag_err_MOA, assessment, lCurve_MOA, remarks_MOA
 #name_OGLE, pageURL_OGLE, tMax_OGLE, tMax_err_OGLE, tE_OGLE, tE_err_OGLE, u0_OGLE, u0_err_OGLE, mag_OGLE, mag_err_OGLE, lCurve_OGLE, lCurveZoomed_OGLE, remarks_OGLE
 #name_ARTEMIS_MOA, tMax_ARTEMIS_MOA, tMax_err_ARTEMIS_MOA, tE_ARTEMIS_MOA, tE_err_ARTEMIS_MOA, u0_ARTEMIS_MOA, u0_err_ARTEMIS_MOA
@@ -126,6 +125,7 @@ def outputTable(input_dict):
 	fieldnames = ["name_MOA", "name_OGLE", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
 				  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
 				  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
+	delimiter = ", "
 
 	for fieldname in fieldnames:
 		if fieldname[-12:] == "_ARTEMIS_MOA" and input_dict.has_key("ARTEMIS_MOA"):
@@ -143,11 +143,11 @@ def outputTable(input_dict):
 	logger.info("Output dictionary: " + str(output_dict))
 	if os.path.isfile(EVENT_TRIGGER_RECORD_FILEPATH):
 		with open(EVENT_TRIGGER_RECORD_FILEPATH, "a") as f:
-			writer = csv.DictWriter(f, fieldnames = fieldnames, delimiter = " ")
+			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writerow(output_dict)
 	else:
 		with open(EVENT_TRIGGER_RECORD_FILEPATH, "w") as f:
-			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter= " ")
+			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writeheader()
 			writer.writerow(output_dict)
 
@@ -490,6 +490,7 @@ def test1():
 
 def test2():
 	testID = "gb19-R-7-5172"
+	updateYear("2016")
 
 	values_MOA = getValues_MOA(testID)
 	values_MOA.update({"RA":str(274.573436176), "Dec":str(-25.739123955)})

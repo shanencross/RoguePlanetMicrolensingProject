@@ -138,6 +138,7 @@ def printOnlineTable():
 def saveTable():
 	# Column field names for table
 	fieldnames = ["name_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP"]
+	delimiter = ", "
 
 	# if csv file does NOT yet exist, open it for writing, sort the online TAP events by name, and store each event dictionary
 	# as a row in this sequence
@@ -145,7 +146,7 @@ def saveTable():
 		print "File does not exist. Opening file for writing..."
 		with open(TAP_TARGET_TABLE_OUTPUT_FILEPATH, "w") as f:
 			print "File opened for writing."
-			writer = csv.DictWriter(f, fieldnames=fieldnames)
+			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writeheader()
 			onlineTAPname_list = sorted(onlineTAPevents)
 			print "Sorted online TAP events: " + str(onlineTAPname_list)
@@ -161,7 +162,7 @@ def saveTable():
 		print "File already exists. Opening file for reading..."
 		with open(TAP_TARGET_TABLE_OUTPUT_FILEPATH, "r") as f:
 			print "File opened for reading."
-			reader = csv.DictReader(f)
+			reader = csv.DictReader(f, delimiter=delimiter)
 			
 			# get dictionary with names as keys and event dictionaries as values for locally stored events
 			localTAPevents ={}
@@ -183,7 +184,7 @@ def saveTable():
 		with open(TAP_TARGET_TABLE_OUTPUT_FILEPATH, "w") as f:
 			print "File opened for writing."
 			print "combined TAP name list: " + str(combinedTAPname_list)
-			writer = csv.DictWriter(f, fieldnames=fieldnames)
+			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writeheader()
 
 			# Get and write the event dictionary for each event from the combined list in sequence. 

@@ -1,10 +1,36 @@
 # eventTablesComparison.py
 
+import csv
+
 import comparisonTablePageOutput
 
+TEST_ROGUE_FILEPATH = ""
+TEST_TAP_FILEPATH = ""
 TEST_COMPARISON_PAGE_FILEPATH = "comparisonTablePage_test.html"
 
-def compareTables(ROGUEevents, TAPevents):
+def readROGUEtable(ROGUEfilepath):
+	delimiter = ", "
+	with open(ROGUEfilepath, "r") as f:
+		reader = csv.DictReader(f, delimiter=delimiter)
+		ROGUEevents = []
+		for row in reader:
+			ROGUEevents.append(row)
+		return ROGUEevents
+
+def readTAPtable(TAPfilepath):
+	with open(TAPfilepath, "r") as f:
+		reader = csv.DictReader(f, delimiter=delimiter)
+		TAPevents = []
+		for row in reader:
+			TAPevents.append(row)
+		return TAPevents
+
+def compareTables(ROGUEfilepath, TAPfilepath):
+	ROGUEevents = readROGUEtable(ROGUEfilepath)
+	TAPevents = readTAPtable(TAPfilepath)
+	compareEventLists(ROGUEevents, TAPevents)
+
+def compareEventLists(ROGUEevents, TAPevents):
 	# Create set of all event names in ROGUE and TAP events
 	combinedEventNames_set = ROGUEevents.viewkeys() | TAPevents.viewkeys()
 	
@@ -33,7 +59,7 @@ def compareTables(ROGUEevents, TAPevents):
 		event["ROGUE trigger"] = inROGUE
 		event["TAP trigger"] = inTAP
 
-		# combine items from both lists of event is in both
+		# combine items from both lists if event is in both
 		if inROGUE and inTAP:
 			event.update(TAPevents[eventName])
 
@@ -59,8 +85,8 @@ def compareTables(ROGUEevents, TAPevents):
 
 	return combinedEvents_list
 
-def compareAndOutput(ROGUEevents, TAPevents, comparisonPageFilepath):
-	combinedEvents_list = compareTables(ROGUEevents, TAPevents)
+def compareAndOutput(ROGUEfilepath, TAPfilepath, comparisonPageFilepath):
+	combinedEvents_list = compareTables(ROGUEfilepath, TAPfilepath)
 	comparisonTablePageOutput.outputComparisonPage(combinedEvents_list, comparisonPageFilepath)
 
 def main():
@@ -70,7 +96,23 @@ def main():
 	TAPevents = {"OGLE-2016-BLG-0220": {"tE_TAP": "3.3"}, "OGLE-2016-BLG-0216": {"tE_TAP": "5.9"}, \
 					"OGLE-2016-BLG-0197": {"tE_TAP": "4.8"}, "OGLE-2016-BLG-0195": {"tE_TAP": "1.1"}}
 
-	compareAndOutput(ROGUEevents, TAPevents, TEST_COMPARISON_PAGE_FILEPATH)
+	compareEventLists(ROGUEevents, TAPevents)
+
+def test_lists():
+	ROGUEevents = {"OGLE-2016-BLG-0229": {"tE_OGLE": "4.8"}, "OGLE-2016-BLG-0220": {"tE_OGLE": "3.4"}, \
+				   "OGLE-2016-BLG-0197": {"tE_OGLE": "4.9"}, "OGLE-2016-BLG-0118": {"tE_OGLE": "3.2"}}
+
+	TAPevents = {"OGLE-2016-BLG-0220": {"tE_TAP": "3.3"}, "OGLE-2016-BLG-0216": {"tE_TAP": "5.9"}, \
+					"OGLE-2016-BLG-0197": {"tE_TAP": "4.8"}, "OGLE-2016-BLG-0195": {"tE_TAP": "1.1"}}
+
+	combinedEvents_list = compareEventLists(ROGUEevents, TAPevents)
+	comparisonTablePageOutput.outputComparisonPage(combinedEvents_list, comparisonPageFilepath)
+
+def test_filepaths():
+	ROGUEfilepath = ""
+	TAPfilepath = ""
+
+	compareAndOutput(TEST_ROGUE_FILEPATH, TEST_TAP_FILEPATH, TEST_COMPARISON_PAGE_FILEPATH)
 
 if __name__ == "__main__":
 	main()
