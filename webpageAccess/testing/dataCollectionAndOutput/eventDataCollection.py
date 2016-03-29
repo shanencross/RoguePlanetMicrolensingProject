@@ -1,5 +1,5 @@
 """
-collectEventData.py
+eventDataCollection.py
 IN-PROGRESS WORKING COPY
 Author: Shanen Cross
 Date: 2016-03-21
@@ -29,14 +29,14 @@ MAX_MAG_ERR = 0.7
 #for accessing URLs; default value is current year, but buildPage() changes this to MOA event name year,
 #in case it has been given an event from a year different year
 CURRENT_YEAR = str(datetime.utcnow().year)
-CURRENT_YEAR = "2015"
+CURRENT_YEAR = "2015" #JUST FOR TESTING/DEBUGGING - REMOVE
 eventYear = CURRENT_YEAR
 
 #MOA and OGLE directories set to current year by defaultr; 
 #buildPage() changes these if passed event from different year
 MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + eventYear
 #OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
-OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015"
+OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
 
 #comment this out when saving as in-use copy
 EVENT_FILENAME = "summaryPageTest.html"

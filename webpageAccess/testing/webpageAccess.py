@@ -23,7 +23,7 @@ from K2fov.c9 import inMicrolensRegion # K2 tool for checking if given RA and De
 
 # local script imports
 import loggerSetup # setting up logger
-from dataCollectionAndOutput import collectEventData # collecting data from survey sites and ARTEMIS, as well as outputting HTML summary page and event trigger record .csv
+from dataCollectionAndOutput import eventDataCollection # collecting data from survey sites and ARTEMIS, as well as outputting HTML summary page and event trigger record .csv
 import mailAlert # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
@@ -300,7 +300,7 @@ def eventTrigger(eventPageSoup, values_MOA):
 	if SUMMARY_BUILDER_ON or EVENT_TRIGGER_RECORD_ON:
 		logger.info("Collecting further data from survey site(s) and ARTEMIS if available...")
 		try:
-			dataDict = collectEventData.collectData(eventPageSoup, values_MOA, simulate=True)
+			dataDict = eventDataCollection.collectData(eventPageSoup, values_MOA, simulate=True)
 		except Exception as ex:
 			logger.warning("Exception collecting data from survey site(s) and/or ARTEMIS")
 			logger.warning(ex)
@@ -309,7 +309,7 @@ def eventTrigger(eventPageSoup, values_MOA):
 		if SUMMARY_BUILDER_ON:
 			logger.info("Building and outputting event summary page...")
 			try:
-				collectEventData.buildSummary(dataDict)
+				eventDataCollection.buildSummary(dataDict)
 			except Exception as ex:
 				logger.warning("Exception building/outputting event summary")
 				logger.warning(ex)
@@ -317,7 +317,7 @@ def eventTrigger(eventPageSoup, values_MOA):
 		if EVENT_TRIGGER_RECORD_ON:
 			logger.info("Outputting event to .csv record of event triggers...")
 			try:
-				collectEventData.outputTable(dataDict)
+				eventDataCollection.outputTable(dataDict)
 			except Exception as ex:
 				logger.warning("Exception outputting .csv record of event triggers")
 				logger.warning(ex)
