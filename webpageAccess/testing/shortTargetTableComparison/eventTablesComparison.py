@@ -55,7 +55,7 @@ def readTAPtable(TAPfilepath):
 			elif initialEventName[:3] == "MOA":
 				row["name_MOA"] = initialEventName
 				finalEventName = getComparisonName(initialEventName)
-				if finalEventName[:4] == OGLE:
+				if finalEventName[:4] == "OGLE":
 					row["name_OGLE"] = finalEventName
 			else:
 				"Error: somehow the event, %s, starts with neither MOA nor OGLE prefixes." % (initialEventName)

@@ -44,7 +44,7 @@ if not os.path.exists(EVENT_DIR):
 
 # set year as constant using current date/time, for accessing URLs
 #CURRENT_YEAR = str(datetime.utcnow().year)
-CURRENT_YEAR = "2015"
+CURRENT_YEAR = "2015" #TEMPORARY FOR TESTING/DEBUGGING - CHANGE TO ABOVE LINE
 
 # setup URL paths for website event index and individual pages
 WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert" + CURRENT_YEAR + "/"
