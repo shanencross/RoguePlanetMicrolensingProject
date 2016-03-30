@@ -141,6 +141,7 @@ def outputTable(input_dict):
 			output_dict[fieldname] = input_dict["OGLE"][fieldname[:-5]]
 
 	logger.info("Output dictionary: " + str(output_dict))
+
 	if os.path.isfile(EVENT_TRIGGER_RECORD_FILEPATH):
 		with open(EVENT_TRIGGER_RECORD_FILEPATH, "a") as f:
 			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)

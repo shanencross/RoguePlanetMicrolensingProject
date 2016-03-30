@@ -1,5 +1,7 @@
-# eventTablesComparison.py
-
+"""
+eventTablesComparison.py
+Author: Shanen Cross
+"""
 import sys
 import os
 import csv
