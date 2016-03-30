@@ -125,7 +125,7 @@ def outputTable(input_dict):
 	fieldnames = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
 				  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
 				  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
-	delimiter = ", "
+	delimiter = ","
 
 	for fieldname in fieldnames:
 		if fieldname[-12:] == "_ARTEMIS_MOA" and input_dict.has_key("ARTEMIS_MOA"):

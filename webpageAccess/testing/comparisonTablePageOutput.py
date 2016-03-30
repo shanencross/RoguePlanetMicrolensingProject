@@ -1,6 +1,8 @@
-# comparisonTablePageOutput.py
-# Purpose: Given list of combined ROGUE/TAP dictionaries from compareEventTables.py, ouput comparison table HTML page. 
-
+"""
+comparisonTablePageOutput.py
+Author: Shanen Cross
+Purpose: Given list of combined ROGUE/TAP dictionaries from compareEventTables.py, ouput comparison table HTML page. 
+"""
 from datetime import datetime
 
 TEST_EVENT_LIST = [{"name_MOA":"MOA-2015-BLG-123", "ID_MOA":"gb19-R-2-7179", "ROGUE trigger":"yes", "TAP trigger":"no"}, \
@@ -20,6 +22,11 @@ TAP fieldnames:
 MOA_DIR_BASE = "https://it019909.massey.ac.nz/moa/alert" 
 OGLE_DIR_BASE = "http://ogle.astrouw.edu.pl/ogle4/ews/"
 
+# List of fields (dictionary keys) to be used as column headers in the table. 
+# They must match the key names for the combined ROGUE/TAP event dictionaries. 
+# Can omitt any keys/fields we want to exclude from the table.
+# If an event dictionary lacks one of these keys (i.e. an event has only a MOA name, and no OGLE name), "N/A" will be
+# printed in the corresponding table entry.
 COMBINED_FIELDNAMES = ["name_MOA", "name_OGLE", "RA_MOA", "Dec_MOA", "ROGUE trigger", "TAP trigger", "priority_TAP", "tE_TAP", "tE_err_TAP", "tE_MOA", \
 					   "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", \
 					   "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", \
@@ -73,7 +80,11 @@ def getURL(event, nameKey):
 	# If we want a MOA name, construct URL from event's year and MOA ID
 	if nameKey == "name_MOA":
 		MOA_dir = MOA_DIR_BASE + eventYear + "/"
-		eventURL = MOA_dir + "display.php?id=" + event["ID_MOA"]
+		if event.has_key("ID_MOA"):
+			eventURL = MOA_dir + "display.php?id=" + event["ID_MOA"]
+		else:
+			print "Warning: No MOA ID found for event in dictionary. Cannot construct MOA URL. URL left as empty string."
+			eventURL = ""
 
 	# If we want an OGLE name, construct the URL from its event name with year prefix removed.
 	# If event's year is older than current year, subdirectory of the event year is added on 
@@ -109,6 +120,12 @@ def printPageStart(myFile):
 <html>
 <title>Target Comparison Table: ROGUE vs. TAP</title><head><STYLE type="text/css">strong.topnav {background: #EFF5FB; color: #0000FF; text-align: center; padding-bottom: 0.2em; font-family: arial, helvetica, times; font-size: 10pt}a.plain {text-decoration:none; color: #0000FF} a:visited {text-decoration:none; color: blue} a.plain:hover {text-decoration:none; background: #819FF7; color: white}BODY { font-family: arial, helvetica, times; background: #FFFFFF; margin-left:0.2em; margin-right: 1em}.textheading {text-align: right; width: 70%; color: #819FF7; font-family: arial, helvetica, times; margin-top: 1.5em}.tablehead {color: #AAAAA; text-align: center; font-family: arial, helvetica, times; font-weight: bold}tablecontent {margin-top: 0.3em; margin-left: 0.2em; margin-bottom: 0.2em; font-family: arial, helvetica, times}.generic {font-family: arial, helvetica, times}.table {font-family: arial, helvetica, times; text-align: center}a:link {text-decoration:none;} a:visited {text-decoration:none; color: blue} a:hover {text-decoration:none; color: #819FF7}</STYLE></head><body>
 <H2> Target Comparison Table: ROGUE vs. TAP</H2>
+Note:<BR>
+Events triggered by only TAP will have N/A entries for MOA, OGLE, and ARTEMIS values, even if they exist.<BR>
+This is because the TAP csv files only store the TAP data, while the ROGUE csv files store the MOA, OGLE, and ARTEMIS data.<BR>
+Likewise, TAP-only events have no working MOA URLs, because the csv files do not contain the MOA ID which is needed to construct those URLs.<BR>
+Comparison script should be updated to collect this additional data for TAP-only events.<BR>
+<BR>
 <TABLE cellpadding="4" style="border: 1px solid #000000; border-collapse: collapse;" border="1">
 <TR>\
 """

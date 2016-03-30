@@ -1,19 +1,31 @@
 # eventTablesComparison.py
 
+import sys
+import os
 import csv
 
 import comparisonTablePageOutput
 from dataCollectionAndOutput import eventDataCollection #TEMP - WON'T WORK - HOW TO IMPORT FROM SUBDIR OF PARENT DIR?
 
 TEST_ROGUE_FILEPATH = ""
-TEST_TAP_FILEPATH = ""
+
+TEST_TAP_DIR = os.path.join(sys.path[0], "TAP/TAPtargetTable/")
+TEST_TAP_FILENAME = "TAP_target_table.csv"
+TEST_TAP_FILEPATH = os.path.join(TEST_TAP_DIR, TEST_TAP_FILENAME)
 TEST_COMPARISON_PAGE_FILEPATH = "comparisonTablePage_test.html"
 
 def readROGUEtable(ROGUEfilepath):
-	delimiter = ", "
+	delimiter = ","
+
+	# If there is no ROGUE table file, return an empty dictionary. 
+	# Program should run as normal, just with no ROGUE events.
+	if not os.path.isfile(ROGUEfilepath):
+		print "Warning: No ROGUE event table file found"
+		print "Filepath: " + str(ROGUEfilepath)
+		return {}
+	
 	with open(ROGUEfilepath, "r") as f:
 		reader = csv.DictReader(f, delimiter=delimiter)
-		
 		ROGUEevents = {}
 		for row in reader:
 			
@@ -33,7 +45,15 @@ def readROGUEtable(ROGUEfilepath):
 		return ROGUEevents
 
 def readTAPtable(TAPfilepath):
-	delimiter = ", "
+
+	# If there is no TAP table file, return an empty dictionary. 
+	# Program should run as normal, just with no TAP events.
+	if not os.path.isfile(TAPfilepath):
+		print "Warning: No TAP event table file found"
+		print "Filepath: " + str(TAPfilepath)
+		return {}
+
+	delimiter = ","
 	with open(TAPfilepath, "r") as f:
 		reader = csv.DictReader(f, delimiter=delimiter)
 		TAPevents = {}
@@ -78,18 +98,17 @@ def getComparisonName(eventName_full):
 	
 	# If the event had no conversion counterpart, return the original full name unchanged as the comparison
 	if eventNameConverted_short == None:
-		comparisonName = eventname_full
+		comparisonName = eventName_full
 	# If the event was converted, construct the full name for the new converted name and return that as the comparison name
 	else:
 		comparisonName = "OGLE-" + eventNameConverted_short
 	
 	return comparisonName
-	
 
 def compareTables(ROGUEfilepath, TAPfilepath):
 	ROGUEevents = readROGUEtable(ROGUEfilepath)
 	TAPevents = readTAPtable(TAPfilepath)
-	compareEventDicts(ROGUEevents, TAPevents)
+	return compareEventDicts(ROGUEevents, TAPevents)
 
 def compareEventDicts(ROGUEevents, TAPevents):
 	# Create combined set of all event names in ROGUE and TAP events
@@ -128,6 +147,7 @@ def compareEventDicts(ROGUEevents, TAPevents):
 		# dictionaries
 		combinedEvents_list.append(event)
 
+	"""
 	print "ROGUE list:"
 	for event in ROGUEevents:
 		print event
@@ -139,6 +159,7 @@ def compareEventDicts(ROGUEevents, TAPevents):
 	print "Combined list:"
 	for event in combinedEvents_list:
 		print event
+	"""
 
 	return combinedEvents_list
 
@@ -147,24 +168,29 @@ def compareAndOutput(ROGUEfilepath, TAPfilepath, comparisonPageFilepath):
 	comparisonTablePageOutput.outputComparisonPage(combinedEvents_list, comparisonPageFilepath)
 
 def test_dicts():
-	ROGUEevents = {"OGLE-2016-BLG-0229": {"name_OGLE":"OGLE-2016-BLG-0229", "tE_OGLE": "4.8"}, \
-				   "OGLE-2016-BLG-0220": {"name_OGLE":"OGLE-2016-BLG-0220", "tE_OGLE": "3.4"}, \
-				   "OGLE-2016-BLG-0197": {"name_OGLE":"OGLE-2016-BLG-0197", "tE_OGLE": "4.9"}, \
-				   "OGLE-2016-BLG-0118": {"name_OGLE":"OGLE-2016-BLG-0118", "tE_OGLE": "3.2"}}
+	ROGUEevents = {"OGLE-2016-BLG-0229": {"name_OGLE":"OGLE-2016-BLG-0229", "tE_OGLE":"4.8"}, \
+				   "OGLE-2016-BLG-0220": {"name_OGLE":"OGLE-2016-BLG-0220", "tE_OGLE":"3.4"}, \
+				   "OGLE-2016-BLG-0197": {"name_OGLE":"OGLE-2016-BLG-0197", "tE_OGLE":"4.9"}, \
+				   "OGLE-2016-BLG-0118": {"name_OGLE":"OGLE-2016-BLG-0118", "tE_OGLE":"3.2"}, \
+				   "MOA-2016-BLG-133": {"name_MOA":"MOA-2016-BLG-133", "tE_MOA":"1.8"}, \
+				   "MOA-2016-BLG-133": {"name_MOA":"MOA-2016-BLG-133", "ID_MOA":"gb4-R-8-62452", "tE_MOA":"1.8"}, \
+				   "OGLE-2016-BLG-0524": {"name_MOA":"MOA-2016-BLG-119", "name_OGLE":"OGLE-2016-BLG-0524", \
+										  "ID_MOA":"gb9-R-8-44792", "tE_MOA":"1.8", "tE_OGLE":"1.9"}}
 
-	TAPevents = {"OGLE-2016-BLG-0220": {"name_OGLE":"OGLE-2016-BLG-0220", "tE_OGLE": "3.3"}, \
-				   "OGLE-2016-BLG-0216": {"name_OGLE":"OGLE-2016-BLG-0216", "tE_OGLE": "5.9"}, \
-				   "OGLE-2016-BLG-0197": {"name_OGLE":"OGLE-2016-BLG-0197", "tE_OGLE": "4.8"}, \
-				   "OGLE-2016-BLG-01195": {"name_OGLE":"OGLE-2016-BLG-0195", "tE_OGLE": "1.1"}
+	TAPevents = {"OGLE-2016-BLG-0220": {"name_OGLE":"OGLE-2016-BLG-0220", "tE_OGLE":"3.3"}, \
+				   "OGLE-2016-BLG-0216": {"name_OGLE":"OGLE-2016-BLG-0216", "tE_OGLE":"5.9"}, \
+				   "OGLE-2016-BLG-0197": {"name_OGLE":"OGLE-2016-BLG-0197", "tE_OGLE":"4.8"}, \
+				   "OGLE-2016-BLG-01195": {"name_OGLE":"OGLE-2016-BLG-0195", "tE_OGLE":"1.1"}}
 
 	combinedEvents_list = compareEventDicts(ROGUEevents, TAPevents)
-	comparisonTablePageOutput.outputComparisonPage(combinedEvents_list, comparisonPageFilepath)
+	comparisonTablePageOutput.outputComparisonPage(combinedEvents_list, TEST_COMPARISON_PAGE_FILEPATH)
 
 def test_filepaths():
 	compareAndOutput(TEST_ROGUE_FILEPATH, TEST_TAP_FILEPATH, TEST_COMPARISON_PAGE_FILEPATH)
 
 def main():
-	test_dicts()
+	#test_dicts()
+	test_filepaths()
 
 if __name__ == "__main__":
 	main()

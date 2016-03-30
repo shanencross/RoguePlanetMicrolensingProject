@@ -164,6 +164,51 @@ def evaluateEvent(splitEvent):
 	else:
 		logger.info("Einstein time failed: must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
 
+def eventTrigger(eventPageSoup, values_MOA):
+	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
+	logger.info("Event is potentially suitable for observation!")
+	if MAIL_ALERTS_ON:
+		logger.info("Mailing event alert...")
+		try:
+			sendMailAlert(values_MOA)
+		except Exception as ex:
+			logger.warning("Exception attempting to mail event alert")
+			logger.warning(ex)
+
+	if SUMMARY_BUILDER_ON or EVENT_TRIGGER_RECORD_ON:
+		logger.info("Collecting further data from survey site(s) and ARTEMIS if available...")
+		try:
+			dataDict = eventDataCollection.collectData(eventPageSoup, values_MOA, simulate=True)
+		except Exception as ex:
+			logger.warning("Exception collecting data from survey site(s) and/or ARTEMIS")
+			logger.warning(ex)
+			return
+
+		if SUMMARY_BUILDER_ON:
+			logger.info("Building and outputting event summary page...")
+			try:
+				eventDataCollection.buildSummary(dataDict)
+			except Exception as ex:
+				logger.warning("Exception building/outputting event summary")
+				logger.warning(ex)
+
+		if EVENT_TRIGGER_RECORD_ON:
+			logger.info("Outputting event to .csv record of event triggers...")
+			try:
+				eventDataCollection.outputTable(dataDict)
+			except Exception as ex:
+				logger.warning("Exception outputting .csv record of event triggers")
+				logger.warning(ex)
+				return
+
+			if EVENT_TABLE_COMPARISON_ON:
+				logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
+				try:
+					pass
+				except Exception as ex:
+					logger.warning("Exception generating/outputting comparison table HTML page")
+					logger.warning(ex)
+
 def checkEinsteinTime(tE_string):
 	"""Check if Einstein time is short enough for observation."""
 	einsteinTime = float(tE_string)
@@ -285,51 +330,6 @@ def checkMag(magValues):
 		return False
 	else:
 		return True
-
-def eventTrigger(eventPageSoup, values_MOA):
-	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
-	logger.info("Event is potentially suitable for observation!")
-	if MAIL_ALERTS_ON:
-		logger.info("Mailing event alert...")
-		try:
-			sendMailAlert(values_MOA)
-		except Exception as ex:
-			logger.warning("Exception attempting to mail event alert")
-			logger.warning(ex)
-
-	if SUMMARY_BUILDER_ON or EVENT_TRIGGER_RECORD_ON:
-		logger.info("Collecting further data from survey site(s) and ARTEMIS if available...")
-		try:
-			dataDict = eventDataCollection.collectData(eventPageSoup, values_MOA, simulate=True)
-		except Exception as ex:
-			logger.warning("Exception collecting data from survey site(s) and/or ARTEMIS")
-			logger.warning(ex)
-			return
-
-		if SUMMARY_BUILDER_ON:
-			logger.info("Building and outputting event summary page...")
-			try:
-				eventDataCollection.buildSummary(dataDict)
-			except Exception as ex:
-				logger.warning("Exception building/outputting event summary")
-				logger.warning(ex)
-
-		if EVENT_TRIGGER_RECORD_ON:
-			logger.info("Outputting event to .csv record of event triggers...")
-			try:
-				eventDataCollection.outputTable(dataDict)
-			except Exception as ex:
-				logger.warning("Exception outputting .csv record of event triggers")
-				logger.warning(ex)
-				return
-
-			if EVENT_TABLE_COMPARISON_ON:
-				logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
-				try:
-					pass
-				except Exception as ex:
-					logger.warning("Exception generating/outputting comparison table HTML page")
-					logger.warning(ex)
 
 def sendMailAlert(values_MOA):
 	"""Send mail alert upon detecting short duration microlensing event"""
