@@ -32,13 +32,13 @@ def readROGUEtable(ROGUEfilepath):
 		for row in reader:
 			
 			# If the event has an OGLE name, use this name for dictionary
-			if row.has_key("name_OGLE"):
-				finalEventName = row["name_MOA"]
+			if row.has_key("name_OGLE") and row["name_OGLE"] != "":
+				finalEventName = row["name_OGLE"]
 
 			# If the event has a MOA name and no OGLE name, convert it to OGLE if possible;
 			# otherwise, leave it the same
-			elif row.has_key("name_MOA"):
-				initialEventName = row["name_OGLE"]
+			elif row.has_key("name_MOA") and row["name_OGLE"] != "":
+				initialEventName = row["name_MOA"]
 				finalEventname = getComparisonName(initialEventName)
 			
 			#Regardless, place the event into the events dictionary

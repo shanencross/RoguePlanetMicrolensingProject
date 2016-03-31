@@ -24,6 +24,7 @@ from K2fov.c9 import inMicrolensRegion # K2 tool for checking if given RA and De
 # local script imports
 import loggerSetup # setting up logger
 from dataCollectionAndOutput import eventDataCollection # collecting data from survey sites and ARTEMIS, as well as outputting HTML summary page and event trigger record .csv
+import updateCSV
 import mailAlert # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
@@ -43,8 +44,8 @@ if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
 
 # set year as constant using current date/time, for accessing URLs
-#CURRENT_YEAR = str(datetime.utcnow().year)
-CURRENT_YEAR = "2015" #TEMPORARY FOR TESTING/DEBUGGING - CHANGE TO ABOVE LINE
+CURRENT_YEAR = str(datetime.utcnow().year)
+#CURRENT_YEAR = "2015" #TEMPORARY FOR TESTING/DEBUGGING - CHANGE TO ABOVE LINE
 
 # setup URL paths for website event index and individual pages
 WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert" + CURRENT_YEAR + "/"
@@ -68,12 +69,28 @@ MIN_MAG = 17.5 # magnitude units - only check events as bright or brighter than 
 			   # (i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 # magnitude unites - maximum error allowed for a mag
 
+EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
+EVENT_TRIGGER_RECORD_FILENAME = "eventTriggerRecord.csv"
+EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRIGGER_RECORD_FILENAME)
+if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
+	os.makedirs(EVENT_TRIGGER_RECORD_DIR)
+
+# Fieldnames and delimiter for .csv file storing event triggers
+FIELDNAMES = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
+			  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
+			  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
+
+DELIMITER = ","
+
 # Flag for mail alerts functionality and list of mailing addresses
 MAIL_ALERTS_ON = False
 SUMMARY_BUILDER_ON = True
 EVENT_TRIGGER_RECORD_ON = True
 EVENT_TABLE_COMPARISON_ON = True
 MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
+
+# Golbal dictionary of event triggers to update .csv file with
+eventTriggerDict = {}
 
 def main():
 	logger.info("---------------------------------------")
@@ -93,6 +110,7 @@ def main():
 	if not os.path.isfile(EVENT_FILEPATH):
 		localEvent = ""
 		checkEvents(localEvent, index)
+		saveAndCompareTriggers()
 		with open(EVENT_FILEPATH, 'w') as eventFile:
 			eventFile.write(newestEvent)
 
@@ -103,6 +121,7 @@ def main():
 		if newestEvent != localEvent:
 			# check over new events, evaluating each for observation triggering
 			checkEvents(localEvent, index)
+			saveAndCompareTriggers()
 			# overwrite old local event with newest event after reading if updated is needed
 			with open(EVENT_FILEPATH, 'w') as eventFile:
 				# eventFile.seek(0)
@@ -166,6 +185,7 @@ def evaluateEvent(splitEvent):
 
 def eventTrigger(eventPageSoup, values_MOA):
 	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
+
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_ALERTS_ON:
 		logger.info("Mailing event alert...")
@@ -193,21 +213,12 @@ def eventTrigger(eventPageSoup, values_MOA):
 				logger.warning(ex)
 
 		if EVENT_TRIGGER_RECORD_ON:
-			logger.info("Outputting event to .csv record of event triggers...")
+			logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later..")
 			try:
-				eventDataCollection.outputTable(dataDict)
+				addEventToTriggerDict(dataDict)
 			except Exception as ex:
-				logger.warning("Exception outputting .csv record of event triggers")
+				logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
 				logger.warning(ex)
-				return
-
-			if EVENT_TABLE_COMPARISON_ON:
-				logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
-				try:
-					pass
-				except Exception as ex:
-					logger.warning("Exception generating/outputting comparison table HTML page")
-					logger.warning(ex)
 
 def checkEinsteinTime(tE_string):
 	"""Check if Einstein time is short enough for observation."""
@@ -330,6 +341,86 @@ def checkMag(magValues):
 		return False
 	else:
 		return True
+
+def addEventToTriggerDict(eventDataDict):
+	"""Add event data dictionary (dictionary containing separate dictionaries for data from each survey) \
+	to dictionary of event triggers, first converting it to a single event dictionary containing items from all surveys."""
+
+	event = convertDataDict(eventDataDict)
+
+	# Use OGLE name for key pointing to event as value if availble.
+	if event.has_key("name_OGLE") and event["name_OGLE"] != "":
+		logger.info("Event has OGLE name")
+		nameKey = "name_OGLE"
+
+	# Otherwise, use the MOA name.
+	elif event.has_key("name_MOA") and event["name_MOA"] != "":
+		logger.info("Event has MOA name and no OGLE name")
+		nameKey = "name_MOA"
+
+	# If there is a neither a MOA nor OGLE name, something has gone wrong, and we abort storing the event.
+	else:
+		logger.warning("Event has neither OGLE nor MOA name item. Event:\n" + str(event))
+		logger.warning("Aborting added event to event trigger dictionary...")
+		return
+
+	eventName = event[nameKey]
+	eventTriggerDict[eventName] = event
+
+def convertDataDict(eventDataDict):
+	"""Convert event data dictionary (dictionary containing separate dictionaries for data from each survey) \
+	for an event to proper format, combining data from all surveys into one dictionary."""
+
+	"""
+	EventDataDict is a dictionary of up to four event dictionaries for the same event.
+	They contain MOA, OGLE, ARTEMIS_MOA, and ARTEMIS_OGLE values respectively.
+	We convert this to a single dictionary with items from all surveys, and keys with survey suffixes attached
+	to distinguish, for examle, tE_MOA from the tE_OGLE.
+	"""
+	convertedEventDict = {}
+
+	for fieldname in FIELDNAMES:
+		if fieldname[-12:] == "_ARTEMIS_MOA" and eventDataDict.has_key("ARTEMIS_MOA") and eventDataDict["ARTEMIS_MOA"] != "":
+			convertedEventDict[fieldname] = eventDataDict["ARTEMIS_MOA"][fieldname[:-12]]
+
+		elif fieldname[-4:] == "_MOA" and eventDataDict.has_key("MOA") and eventDataDict["MOA"] != "":
+			convertedEventDict[fieldname] = eventDataDict["MOA"][fieldname[:-4]]
+
+		elif fieldname[-13:] == "_ARTEMIS_OGLE" and eventDataDict.has_key("ARTEMIS_OGLE") and eventDataDict["ARTEMIS_OGLE"] != "":
+			convertedEventDict[fieldname] = eventDataDict["ARTEMIS_OGLE"][fieldname[:-13]]
+
+		elif fieldname[-5:] == "_OGLE" and eventDataDict.has_key("OGLE") and eventDataDict["OGLE"] != "":
+			convertedEventDict[fieldname] = eventDataDict["OGLE"][fieldname[:-5]]
+
+		# Convert the shortened names such as "2016-BLG-123" to the full names with survey prefixes,
+		# like "MOA-2016-BLG-123" or "OGLE-2016"BLG-123";
+		# Last condition Probably not necessary, but just in case
+		if fieldname[:5] == "name_" and convertedEventDict.has_key(fieldname) and convertedEventDict[fieldname] != "":
+				surveyName = fieldname[5:]
+				convertedEventDict[fieldname] = surveyName + "-" + convertedEventDict[fieldname]
+
+		logger.debug("Converted event dict: " + str(convertedEventDict))
+
+	return convertedEventDict
+
+def saveAndCompareTriggers():
+	if EVENT_TRIGGER_RECORD_ON:
+		logger.info("Outputting event to .csv record of event triggers...")
+		try:
+			updateCSV.update(EVENT_TRIGGER_RECORD_FILEPATH, eventTriggerDict, fieldnames=FIELDNAMES, delimiter=DELIMITER)
+		except Exception as ex:
+			logger.warning("Exception outputting .csv record of event triggers")
+			logger.warning(ex)
+			return
+
+		if EVENT_TABLE_COMPARISON_ON:
+			logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
+			try:
+				#eventTablesComparison.compareAndOutput(ROGUE_FILEPATH, TAP_FILEPATH, TEST_COMPARISON_PAGE_FILEPATH)
+				pass
+			except Exception as ex:
+				logger.warning("Exception generating/outputting comparison table HTML page")
+				logger.warning(ex)		
 
 def sendMailAlert(values_MOA):
 	"""Send mail alert upon detecting short duration microlensing event"""

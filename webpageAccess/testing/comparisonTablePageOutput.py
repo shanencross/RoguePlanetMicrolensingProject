@@ -120,11 +120,16 @@ def printPageStart(myFile):
 <html>
 <title>Target Comparison Table: ROGUE vs. TAP</title><head><STYLE type="text/css">strong.topnav {background: #EFF5FB; color: #0000FF; text-align: center; padding-bottom: 0.2em; font-family: arial, helvetica, times; font-size: 10pt}a.plain {text-decoration:none; color: #0000FF} a:visited {text-decoration:none; color: blue} a.plain:hover {text-decoration:none; background: #819FF7; color: white}BODY { font-family: arial, helvetica, times; background: #FFFFFF; margin-left:0.2em; margin-right: 1em}.textheading {text-align: right; width: 70%; color: #819FF7; font-family: arial, helvetica, times; margin-top: 1.5em}.tablehead {color: #AAAAA; text-align: center; font-family: arial, helvetica, times; font-weight: bold}tablecontent {margin-top: 0.3em; margin-left: 0.2em; margin-bottom: 0.2em; font-family: arial, helvetica, times}.generic {font-family: arial, helvetica, times}.table {font-family: arial, helvetica, times; text-align: center}a:link {text-decoration:none;} a:visited {text-decoration:none; color: blue} a:hover {text-decoration:none; color: #819FF7}</STYLE></head><body>
 <H2> Target Comparison Table: ROGUE vs. TAP</H2>
-Note:<BR>
+Notes:<BR>
 Events triggered by only TAP will have N/A entries for MOA, OGLE, and ARTEMIS values, even if they exist.<BR>
 This is because the TAP csv files only store the TAP data, while the ROGUE csv files store the MOA, OGLE, and ARTEMIS data.<BR>
 Likewise, TAP-only events have no working MOA URLs, because the csv files do not contain the MOA ID which is needed to construct those URLs.<BR>
 Comparison script should be updated to collect this additional data for TAP-only events.<BR>
+<BR>
+Also, data from ROGUE for a particular (MOA, OGLE, and ARTEMIS values) has not been updated since that event triggered. Check survey sites for updated data.<BR>
+The TAP data, on the other hand, is regularly updated, but this table only updates when ROGUE triggers on an event.<BR>
+So the TAP data dates from when ROGUE last triggered on an event.<BR>
+Any TAP events more recent than the latest ROGUE trigger are thus not listed.<BR>
 <BR>
 <TABLE cellpadding="4" style="border: 1px solid #000000; border-collapse: collapse;" border="1">
 <TR>\

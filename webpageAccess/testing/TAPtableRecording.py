@@ -10,6 +10,8 @@ import requests
 import csv
 from bs4 import BeautifulSoup
 
+import updateCSV
+
 # local script imports
 #from compareEventTables import compareEvents
 #from dataCollectionAndOutput import collectEventData
@@ -98,6 +100,9 @@ def saveTable():
 	fieldnames = ["name_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP"]
 	delimiter = ","
 
+	updateCSV.update(TAP_TARGET_TABLE_OUTPUT_FILEPATH, onlineTAPevents, fieldnames=fieldnames, delimiter=delimiter)
+
+	"""
 	# if csv file does NOT yet exist, open it for writing, sort the online TAP events by name, and store each event dictionary
 	# as a row in this sequence
 	if not os.path.isfile(TAP_TARGET_TABLE_OUTPUT_FILEPATH):
@@ -158,7 +163,7 @@ def saveTable():
 					eventDict = None
 				#print "Writing event dictionary: " + str(eventDict)
 				writer.writerow(eventDict)
-	
+		"""
 def main():
 	updateTable()
 	#printOnlineTable()

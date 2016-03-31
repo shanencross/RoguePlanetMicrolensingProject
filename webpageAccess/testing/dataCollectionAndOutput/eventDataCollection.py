@@ -14,13 +14,14 @@ from bs4 import BeautifulSoup #html parsing
 import csv
 
 import summaryLoggerSetup
+import updateCSV
 
 requests.packages.urllib3.disable_warnings()
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "collectEventDataLog")
-LOG_NAME = "collectEventDataLog"
+LOG_DIR = os.path.join(sys.path[0], "eventDataCollectionLog")
+LOG_NAME = "eventDataCollectionLog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
@@ -29,14 +30,14 @@ MAX_MAG_ERR = 0.7
 #for accessing URLs; default value is current year, but buildPage() changes this to MOA event name year,
 #in case it has been given an event from a year different year
 CURRENT_YEAR = str(datetime.utcnow().year)
-CURRENT_YEAR = "2015" #JUST FOR TESTING/DEBUGGING - REMOVE
+#CURRENT_YEAR = "2015" #JUST FOR TESTING/DEBUGGING - REMOVE
 eventYear = CURRENT_YEAR
 
 #MOA and OGLE directories set to current year by defaultr; 
 #buildPage() changes these if passed event from different year
 MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + eventYear
-#OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
-OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
+OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
+#OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
 
 #comment this out when saving as in-use copy
 EVENT_FILENAME = "summaryPageTest.html"
@@ -113,14 +114,16 @@ def buildSummary(values_dict):
 		outputFile.write(outputString)
 	logger.info("--------------------------------------------")
 
+"""
 def outputTable(input_dict):
 	logger.info("Outputting table...")
-	output_dict = {}
+	new_dict = {}
 	
-#name_MOA, pageURL_MOA, tMax_MOA, tMax_err_MOA, tE_MOA, tE_err_MOA, u0_MOA, u0_err_MOA, mag_MOA, mag_err_MOA, assessment, lCurve_MOA, remarks_MOA
-#name_OGLE, pageURL_OGLE, tMax_OGLE, tMax_err_OGLE, tE_OGLE, tE_err_OGLE, u0_OGLE, u0_err_OGLE, mag_OGLE, mag_err_OGLE, lCurve_OGLE, lCurveZoomed_OGLE, remarks_OGLE
-#name_ARTEMIS_MOA, tMax_ARTEMIS_MOA, tMax_err_ARTEMIS_MOA, tE_ARTEMIS_MOA, tE_err_ARTEMIS_MOA, u0_ARTEMIS_MOA, u0_err_ARTEMIS_MOA
-#name_ARTEMIS_OGLE, tMax_ARTEMIS_OGLE, tMax_err_ARTEMIS_OGLE, tE_ARTEMIS_OGLE, tE_err_ARTEMIS_OGLE, u0_ARTEMIS_OGLE, u0_err_ARTEMIS_OGLE
+	#name_MOA, pageURL_MOA, tMax_MOA, tMax_err_MOA, tE_MOA, tE_err_MOA, u0_MOA, u0_err_MOA, mag_MOA, mag_err_MOA, assessment, lCurve_MOA, remarks_MOA
+	#name_OGLE, pageURL_OGLE, tMax_OGLE, tMax_err_OGLE, tE_OGLE, tE_err_OGLE, u0_OGLE, u0_err_OGLE, mag_OGLE, mag_err_OGLE, lCurve_OGLE, lCurveZoomed_OGLE, remarks_OGLE
+	#name_ARTEMIS_MOA, tMax_ARTEMIS_MOA, tMax_err_ARTEMIS_MOA, tE_ARTEMIS_MOA, tE_err_ARTEMIS_MOA, u0_ARTEMIS_MOA, u0_err_ARTEMIS_MOA
+	#name_ARTEMIS_OGLE, tMax_ARTEMIS_OGLE, tMax_err_ARTEMIS_OGLE, tE_ARTEMIS_OGLE, tE_err_ARTEMIS_OGLE, u0_ARTEMIS_OGLE, u0_err_ARTEMIS_OGLE
+
 
 	fieldnames = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
 				  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
@@ -129,28 +132,31 @@ def outputTable(input_dict):
 
 	for fieldname in fieldnames:
 		if fieldname[-12:] == "_ARTEMIS_MOA" and input_dict.has_key("ARTEMIS_MOA"):
-			output_dict[fieldname] = input_dict["ARTEMIS_MOA"][fieldname[:-12]]
+			new_dict[fieldname] = input_dict["ARTEMIS_MOA"][fieldname[:-12]]
 
 		elif fieldname[-4:] == "_MOA" and input_dict.has_key("MOA"):
-			output_dict[fieldname] = input_dict["MOA"][fieldname[:-4]]
+			new_dict[fieldname] = input_dict["MOA"][fieldname[:-4]]
 
 		elif fieldname[-13:] == "_ARTEMIS_OGLE" and input_dict.has_key("ARTEMIS_OGLE"):
-			output_dict[fieldname] = input_dict["ARTEMIS_OGLE"][fieldname[:-13]]
+			new_dict[fieldname] = input_dict["ARTEMIS_OGLE"][fieldname[:-13]]
 
 		elif fieldname[-5:] == "_OGLE" and input_dict.has_key("OGLE"):
-			output_dict[fieldname] = input_dict["OGLE"][fieldname[:-5]]
+			new_dict[fieldname] = input_dict["OGLE"][fieldname[:-5]]
 
-	logger.info("Output dictionary: " + str(output_dict))
+	logger.info("New dictionary: " + str(new_dict))
+
+	updateCSV.update(EVENT_TRIGGER_RECORD_FILEPATH, new_dict, fieldnames=fieldnames, delimiter=delimiter)
 
 	if os.path.isfile(EVENT_TRIGGER_RECORD_FILEPATH):
 		with open(EVENT_TRIGGER_RECORD_FILEPATH, "a") as f:
 			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
-			writer.writerow(output_dict)
+			writer.writerow(new_dict)
 	else:
 		with open(EVENT_TRIGGER_RECORD_FILEPATH, "w") as f:
 			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writeheader()
-			writer.writerow(output_dict)
+			writer.writerow(new_dict)
+"""
 
 #Update year and associated global URLs
 def updateYear(newYear):
