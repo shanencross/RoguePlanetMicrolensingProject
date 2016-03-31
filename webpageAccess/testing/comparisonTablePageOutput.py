@@ -3,7 +3,18 @@ comparisonTablePageOutput.py
 Author: Shanen Cross
 Purpose: Given list of combined ROGUE/TAP dictionaries from compareEventTables.py, ouput comparison table HTML page. 
 """
+
+import sys
+import os
 from datetime import datetime
+import logging
+
+import loggerSetup
+
+LOG_DIR = os.path.join(sys.path[0], "comparisonTablePageOutputLog")
+LOG_NAME = "comparisonTablePageOutputLog"
+LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
+logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 TEST_EVENT_LIST = [{"name_MOA":"MOA-2015-BLG-123", "ID_MOA":"gb19-R-2-7179", "ROGUE trigger":"yes", "TAP trigger":"no"}, \
 				   {"name_OGLE":"OGLE-2015-BLG-0123", "ROGUE trigger":"yes", "TAP trigger":"yes"}, \
@@ -42,7 +53,8 @@ def outputComparisonPage(eventList, comparisonPageFilepath):
 
 def printEventList(eventList, myFile):
 	"""Print row for each event within table."""
-
+	logger.debug("Outputting list of events to page...")
+	logger.debug("List:\n" + str(eventList))
 	for event in eventList:
 		print >> myFile, """<TR>"""
 		printEvent(event, myFile)
@@ -50,13 +62,15 @@ def printEventList(eventList, myFile):
 
 def printEvent(event, myFile):
 	"""Print row for an individual event."""
-	
+
+	logger.debug("Printing event...")
+	logger.debug("Event:\n" + str(event))
 	# COMBINED_FIELDNAMES dictates which keys are to be included as fields. Can exclude data we don't want in the final table
 	# from this field list as desired. If dictionary entry is not found for one of these fields, will output entry "N/A".
 	for key in COMBINED_FIELDNAMES:
 
 		# Makes sure the event has the data item.
-		if event.has_key(key):
+		if event.has_key(key) and event[key] != "":
 
 			# If the field is either the MOA name or OGLE name,
 			# output the fieldname as a link to the event page.
@@ -80,10 +94,10 @@ def getURL(event, nameKey):
 	# If we want a MOA name, construct URL from event's year and MOA ID
 	if nameKey == "name_MOA":
 		MOA_dir = MOA_DIR_BASE + eventYear + "/"
-		if event.has_key("ID_MOA"):
+		if event.has_key("ID_MOA") and event["ID_MOA"] != "":
 			eventURL = MOA_dir + "display.php?id=" + event["ID_MOA"]
 		else:
-			print "Warning: No MOA ID found for event in dictionary. Cannot construct MOA URL. URL left as empty string."
+			logger.warning("No MOA ID found for event in dictionary. Cannot construct MOA URL. URL left as empty string.")
 			eventURL = ""
 
 	# If we want an OGLE name, construct the URL from its event name with year prefix removed.
@@ -100,8 +114,8 @@ def getURL(event, nameKey):
 
 	# Return empty string if asked for something other than a MOA or OGLE name.
 	else:
-		print "Error: Event name key %s does not match either name_MOA or name_OGLE keys" % (nameKey)
-		print "Event: %s" % (str(event))
+		logger.warning("Event name key %s does not match either name_MOA or name_OGLE keys" % (nameKey))
+		logger.warning("Event: %s" % (str(event)))
 		eventURL = ""
 
 	return eventURL
@@ -115,6 +129,7 @@ def getEventYear(eventName):
 def printPageStart(myFile):
 	"""Output beginning of HTML page file, including opening tag for table and table headers."""
 
+	logger.debug("Outputting start of page...")
 	print >> myFile, \
 """\
 <html>
@@ -151,6 +166,7 @@ Any TAP events more recent than the latest ROGUE trigger are thus not listed.<BR
 def printPageEnd(myFile):
 	"""Output end of HTML page file, including closing table tag."""
 	
+	logger.debug("Outputting end of page...")
 	print >> myFile, """</TABLE>"""
 
 def outputTest():

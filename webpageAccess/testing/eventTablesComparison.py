@@ -5,9 +5,16 @@ Author: Shanen Cross
 import sys
 import os
 import csv
+import logging
 
 import comparisonTablePageOutput
 from dataCollectionAndOutput import eventDataCollection #TEMP - WON'T WORK - HOW TO IMPORT FROM SUBDIR OF PARENT DIR?
+import loggerSetup
+
+LOG_DIR = os.path.join(sys.path[0], "eventTablesComparisonLog")
+LOG_NAME = "eventTablesComparisonLog"
+LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
+logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 TEST_ROGUE_FILEPATH = ""
 
@@ -22,37 +29,46 @@ def readROGUEtable(ROGUEfilepath):
 	# If there is no ROGUE table file, return an empty dictionary. 
 	# Program should run as normal, just with no ROGUE events.
 	if not os.path.isfile(ROGUEfilepath):
-		print "Warning: No ROGUE event table file found"
-		print "Filepath: " + str(ROGUEfilepath)
+		logger.warning("No ROGUE event table file found")
+		logger.warning("Filepath: " + str(ROGUEfilepath))
 		return {}
 	
 	with open(ROGUEfilepath, "r") as f:
+		logger.debug("ROGUE file opened for reading.")
 		reader = csv.DictReader(f, delimiter=delimiter)
 		ROGUEevents = {}
 		for row in reader:
-			
+			logger.debug("Reading the following row:\n" + str(row))
 			# If the event has an OGLE name, use this name for dictionary
 			if row.has_key("name_OGLE") and row["name_OGLE"] != "":
 				finalEventName = row["name_OGLE"]
+				logger.debug("The row has an OGLE name: %s" % finalEventName)
 
 			# If the event has a MOA name and no OGLE name, convert it to OGLE if possible;
 			# otherwise, leave it the same
-			elif row.has_key("name_MOA") and row["name_OGLE"] != "":
+			elif row.has_key("name_MOA") and row["name_MOA"] != "":
 				initialEventName = row["name_MOA"]
-				finalEventname = getComparisonName(initialEventName)
+				logger.debug("The row has a MOA name: %s" % initialEventName)
+				logger.debug("Converting MOA name to OGLE name for comparison...")
+				finalEventName = getComparisonName(initialEventName)
+				logger.debug("MOA name %s converted to OGLE name: %s" % (initialEventName, finalEventName))
+			else:
+				logger.warning("Event row has neither MOA nor OGLE name item" % (str(row)))
 			
 			#Regardless, place the event into the events dictionary
-			ROGUEevents[finalEventName] = row					
+			logger.debug("Placing row in dictionary...")
+			ROGUEevents[finalEventName] = row
+			logger.debug("Current dictionary:\n" + str(ROGUEevents))
 
+		logger.debug("Final ROGUE events dictionary: "  + str(ROGUEevents))
 		return ROGUEevents
 
 def readTAPtable(TAPfilepath):
-
 	# If there is no TAP table file, return an empty dictionary. 
 	# Program should run as normal, just with no TAP events.
 	if not os.path.isfile(TAPfilepath):
-		print "Warning: No TAP event table file found"
-		print "Filepath: " + str(TAPfilepath)
+		logger.warning("Warning: No TAP event table file found")
+		logger.warning("Filepath: " + str(TAPfilepath))
 		return {}
 
 	delimiter = ","
@@ -108,9 +124,13 @@ def getComparisonName(eventName_full):
 	return comparisonName
 
 def compareTables(ROGUEfilepath, TAPfilepath):
+	logger.info("Reading in ROGUE events...")
 	ROGUEevents = readROGUEtable(ROGUEfilepath)
+	logger.info("Reading in TAP events...")
 	TAPevents = readTAPtable(TAPfilepath)
-	return compareEventDicts(ROGUEevents, TAPevents)
+	logger.info("Comparing, and generating combined lists...")
+	combinedEvents_list = compareEventDicts(ROGUEevents, TAPevents)
+	return combinedEvents_list
 
 def compareEventDicts(ROGUEevents, TAPevents):
 	# Create combined set of all event names in ROGUE and TAP events
@@ -134,7 +154,7 @@ def compareEventDicts(ROGUEevents, TAPevents):
 		elif inTAP:
 			event = TAPevents[eventName]
 		else:
-			print "Error: event %s not found in either ROGUE or TAP output" % eventName
+			logger.warning("Error: event %s not found in either ROGUE or TAP output" % eventName)
 			continue
 
 		#set flags for whether event is present in ROGUE and/or TAP lists
@@ -166,7 +186,9 @@ def compareEventDicts(ROGUEevents, TAPevents):
 	return combinedEvents_list
 
 def compareAndOutput(ROGUEfilepath, TAPfilepath, comparisonPageFilepath):
+	logger.info("Comparing tables...")
 	combinedEvents_list = compareTables(ROGUEfilepath, TAPfilepath)
+	logger.info("Outputting comparison page...")
 	comparisonTablePageOutput.outputComparisonPage(combinedEvents_list, comparisonPageFilepath)
 
 def test_dicts():

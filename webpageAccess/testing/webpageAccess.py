@@ -25,6 +25,7 @@ from K2fov.c9 import inMicrolensRegion # K2 tool for checking if given RA and De
 import loggerSetup # setting up logger
 from dataCollectionAndOutput import eventDataCollection # collecting data from survey sites and ARTEMIS, as well as outputting HTML summary page and event trigger record .csv
 import updateCSV
+import eventTablesComparison
 import mailAlert # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
@@ -42,6 +43,18 @@ EVENT_DIR = os.path.join(sys.path[0], "lastEvent")
 EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
+
+# Set up filepath for .csv file of TAP event triggers
+TAP_DIR = os.path.join(sys.path[0], "TAPtargetTable")
+TAP_FILENAME = "TAPtargetTable.csv"
+TAP_FILEPATH = os.path.join(TAP_DIR, TAP_FILENAME)
+
+# Set up filepath for ROGUE vs. TAP comparison table HTML file
+COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparisonTable")
+COMPARISON_TABLE_FILENAME = "ROGUE_vs_TAP_Comparison_Table.html"
+COMPARISON_TABLE_FILEPATH = os.path.join(COMPARISON_TABLE_DIR, COMPARISON_TABLE_FILENAME)
+if not os.path.exists(COMPARISON_TABLE_DIR):
+	os.makedirs(COMPARISON_TABLE_DIR)
 
 # set year as constant using current date/time, for accessing URLs
 CURRENT_YEAR = str(datetime.utcnow().year)
@@ -416,8 +429,7 @@ def saveAndCompareTriggers():
 		if EVENT_TABLE_COMPARISON_ON:
 			logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
 			try:
-				#eventTablesComparison.compareAndOutput(ROGUE_FILEPATH, TAP_FILEPATH, TEST_COMPARISON_PAGE_FILEPATH)
-				pass
+				eventTablesComparison.compareAndOutput(EVENT_TRIGGER_RECORD_FILEPATH, TAP_FILEPATH, COMPARISON_TABLE_FILEPATH)
 			except Exception as ex:
 				logger.warning("Exception generating/outputting comparison table HTML page")
 				logger.warning(ex)		
