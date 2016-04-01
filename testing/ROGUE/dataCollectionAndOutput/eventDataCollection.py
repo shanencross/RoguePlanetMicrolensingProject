@@ -63,8 +63,8 @@ SUMMARY_OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingPr
 
 
 EVENT_TRIGGER_RECORD_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventTriggerRecord"
-#change EVENT_TRIGGER_RECORD_DIR to the following when saving as in-use copy:
-# EVENT_TRIGGER_RECORD_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/eventTriggerRecord"
+# change EVENT_TRIGGER_RECORD_DIR to the following when saving as in-use copy:
+# EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
 EVENT_TRIGGER_RECORD_FILENAME = "eventTriggerRecord.csv"
 EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRIGGER_RECORD_FILENAME)
 if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):

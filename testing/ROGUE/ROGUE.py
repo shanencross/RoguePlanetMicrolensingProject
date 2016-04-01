@@ -32,8 +32,8 @@ requests.packages.urllib3.disable_warnings() # to disable warnings when accessin
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "logs/ROGUELog")
-LOG_NAME = "ROGUELog"
+LOG_DIR = os.path.join(sys.path[0], "logs/ROGUElog")
+LOG_NAME = "ROGUElog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 

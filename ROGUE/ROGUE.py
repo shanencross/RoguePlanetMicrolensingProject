@@ -32,8 +32,8 @@ requests.packages.urllib3.disable_warnings() # to disable warnings when accessin
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "logs/ROGUELog")
-LOG_NAME = "ROGUELog"
+LOG_DIR = os.path.join(sys.path[0], "logs/ROGUElog")
+LOG_NAME = "ROGUElog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
@@ -96,11 +96,11 @@ FIELDNAMES = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", 
 DELIMITER = ","
 
 # Flag for mail alerts functionality and list of mailing addresses
-MAIL_ALERTS_ON = False
+MAIL_ALERTS_ON = True
 SUMMARY_BUILDER_ON = True
 EVENT_TRIGGER_RECORD_ON = True
 EVENT_TABLE_COMPARISON_ON = True
-MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
+MAILING_LIST = ["shanencross@gmail.com"]
 
 # Golbal dictionary of event triggers to update .csv file with
 eventTriggerDict = {}
