@@ -100,7 +100,7 @@ MAIL_ALERTS_ON = True
 SUMMARY_BUILDER_ON = True
 EVENT_TRIGGER_RECORD_ON = True
 EVENT_TABLE_COMPARISON_ON = True
-MAILING_LIST = ["shanencross@gmail.com"]
+MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 
 # Golbal dictionary of event triggers to update .csv file with
 eventTriggerDict = {}
