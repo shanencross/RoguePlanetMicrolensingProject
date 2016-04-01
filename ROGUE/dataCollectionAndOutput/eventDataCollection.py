@@ -1,37 +1,43 @@
 """
-buildEventSummaryPage.py
-ACTIVE IN-USE COPY
+eventDataCollection.py
+IN-PROGRESS WORKING COPY
 Author: Shanen Cross
-Date: 2016-03-07
-Purpose: Output summary of event information from different surveys and ARTEMIS as an HTML page
+Date: 2016-03-21
+Purpose: 
 """
 import sys #for getting script directory
 import os #for file-handling
 import requests
 import logging
-import summaryLoggerSetup
 from datetime import datetime
 from bs4 import BeautifulSoup #html parsing
+import csv
+
+import loggerSetup
+import updateCSV
+
 requests.packages.urllib3.disable_warnings()
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "summaryLogs")
-LOG_NAME = "summaryLog"
+LOG_DIR = os.path.join(sys.path[0], "logs/eventDataCollectionLog")
+LOG_NAME = "eventDataCollectionLog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
-logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
+logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 MAX_MAG_ERR = 0.7
 
 #for accessing URLs; default value is current year, but buildPage() changes this to MOA event name year,
 #in case it has been given an event from a year different year
 CURRENT_YEAR = str(datetime.utcnow().year)
+#CURRENT_YEAR = "2015" #JUST FOR TESTING/DEBUGGING - REMOVE
 eventYear = CURRENT_YEAR
 
 #MOA and OGLE directories set to current year by defaultr; 
 #buildPage() changes these if passed event from different year
 MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + eventYear
 OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
+#OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
 
 #comment this out when saving as in-use copy
 """
@@ -41,21 +47,31 @@ EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
 """
+
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
-#OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventSummaryPages"
-#change OUTPUT_DIR to the following when saving as in-use copy.
+#SUMMARY_OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventSummaryPages"
+#change SUMMARY_OUTPUT_DIR to the following when saving as in-use copy.
 #NOTE: Temporarily, output hardcoded to 2015 robonet log directory with TEMP_YEAR. Outputting to 2016 folder results 
 #in dead links #to summaries in email alerts. Only 2015 folder uploads to current URLs. Is the 2016 folder uploading to somewhere
 #else on the server?
 
-#NOTE 2: TEMP_YEAR isn't working anymore, so perhaps they updated things? No files from the 2015 folder or on the 
+#NOTE 2: TEMP_YEAR isn't working anymore, so perhaps they updated things? No files from the 2015 folder are on the 
 #server anymore, only those in the 2016 folder. Now using CURRENT_YEAR instead.
 #TEMP_YEAR = "2015"
-OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/eventSummaryPages"
+SUMMARY_OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/eventSummaryPages"
 
-#values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks
+
+EVENT_TRIGGER_RECORD_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventTriggerRecord"
+#change EVENT_TRIGGER_RECORD_DIR to the following when saving as in-use copy:
+# EVENT_TRIGGER_RECORD_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/eventTriggerRecord"
+EVENT_TRIGGER_RECORD_FILENAME = "eventTriggerRecord.csv"
+EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRIGGER_RECORD_FILENAME)
+if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
+	os.makedirs(EVENT_TRIGGER_RECORD_DIR)
+
+#values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks, RA, Dec
 #values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed, remarks
-def buildPage(eventPageSoup, values_MOA, simulate=True):
+def collectData(eventPageSoup, values_MOA, simulate=True):
 	logger.info("--------------------------------------------")
 
 	#set year to that of MOA event, for accessing URLs, and update MOA/OGLE URl directories
@@ -66,7 +82,7 @@ def buildPage(eventPageSoup, values_MOA, simulate=True):
 	remainingValues_MOA = getRemainingValues_MOA(eventPageSoup, values_MOA["ID"])
 	values_MOA.update(remainingValues_MOA)
 	logger.debug("MOA values: " + str(values_MOA))
-	name_OGLE = MOA_to_OGLE(values_MOA["name"])
+	name_OGLE = convertEventName(values_MOA["name"], MOAtoOGLE=True)
 	if name_OGLE is not None:
 		values_OGLE = getValues_OGLE(name_OGLE)
 		values_ARTEMIS_OGLE = getValues_ARTEMIS(name_OGLE, isMOA=False)
@@ -74,16 +90,74 @@ def buildPage(eventPageSoup, values_MOA, simulate=True):
 		values_OGLE = None
 		values_ARTEMIS_OGLE = None
 	values_ARTEMIS_MOA = getValues_ARTEMIS(values_MOA["name"], isMOA=True)
-	outputString = buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE)	
-	logger.info("Output:\n" + outputString)
 
-	if not os.path.exists(OUTPUT_DIR):
-		os.makedirs(OUTPUT_DIR)
-	outputFilename = values_MOA["name"] + "_summary.html"
-	outputFilepath = os.path.join(OUTPUT_DIR, outputFilename)
+	output_dict = {}
+	if values_MOA is not None:
+		output_dict["MOA"] = values_MOA
+	if values_OGLE is not None:
+		output_dict["OGLE"] = values_OGLE
+	if values_ARTEMIS_MOA is not None:
+		output_dict["ARTEMIS_MOA"] = values_ARTEMIS_MOA
+	if values_ARTEMIS_OGLE is not None:
+		output_dict["ARTEMIS_OGLE"] = values_ARTEMIS_OGLE
+
+	return output_dict
+
+def buildSummary(values_dict):
+	outputString = buildOutputString(values_dict)
+	logger.info("Output:\n" + outputString)
+	
+	if not os.path.exists(SUMMARY_OUTPUT_DIR):
+		os.makedirs(SUMMARY_OUTPUT_DIR)
+	outputFilename = values_dict["MOA"]["name"] + "_summary.html"
+	outputFilepath = os.path.join(SUMMARY_OUTPUT_DIR, outputFilename)
 	with open(outputFilepath, 'w') as outputFile:
 		outputFile.write(outputString)
 	logger.info("--------------------------------------------")
+
+"""
+def outputTable(input_dict):
+	logger.info("Outputting table...")
+	new_dict = {}
+	
+	#name_MOA, pageURL_MOA, tMax_MOA, tMax_err_MOA, tE_MOA, tE_err_MOA, u0_MOA, u0_err_MOA, mag_MOA, mag_err_MOA, assessment, lCurve_MOA, remarks_MOA
+	#name_OGLE, pageURL_OGLE, tMax_OGLE, tMax_err_OGLE, tE_OGLE, tE_err_OGLE, u0_OGLE, u0_err_OGLE, mag_OGLE, mag_err_OGLE, lCurve_OGLE, lCurveZoomed_OGLE, remarks_OGLE
+	#name_ARTEMIS_MOA, tMax_ARTEMIS_MOA, tMax_err_ARTEMIS_MOA, tE_ARTEMIS_MOA, tE_err_ARTEMIS_MOA, u0_ARTEMIS_MOA, u0_err_ARTEMIS_MOA
+	#name_ARTEMIS_OGLE, tMax_ARTEMIS_OGLE, tMax_err_ARTEMIS_OGLE, tE_ARTEMIS_OGLE, tE_err_ARTEMIS_OGLE, u0_ARTEMIS_OGLE, u0_err_ARTEMIS_OGLE
+
+
+	fieldnames = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
+				  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
+				  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
+	delimiter = ","
+
+	for fieldname in fieldnames:
+		if fieldname[-12:] == "_ARTEMIS_MOA" and input_dict.has_key("ARTEMIS_MOA"):
+			new_dict[fieldname] = input_dict["ARTEMIS_MOA"][fieldname[:-12]]
+
+		elif fieldname[-4:] == "_MOA" and input_dict.has_key("MOA"):
+			new_dict[fieldname] = input_dict["MOA"][fieldname[:-4]]
+
+		elif fieldname[-13:] == "_ARTEMIS_OGLE" and input_dict.has_key("ARTEMIS_OGLE"):
+			new_dict[fieldname] = input_dict["ARTEMIS_OGLE"][fieldname[:-13]]
+
+		elif fieldname[-5:] == "_OGLE" and input_dict.has_key("OGLE"):
+			new_dict[fieldname] = input_dict["OGLE"][fieldname[:-5]]
+
+	logger.info("New dictionary: " + str(new_dict))
+
+	updateCSV.update(EVENT_TRIGGER_RECORD_FILEPATH, new_dict, fieldnames=fieldnames, delimiter=delimiter)
+
+	if os.path.isfile(EVENT_TRIGGER_RECORD_FILEPATH):
+		with open(EVENT_TRIGGER_RECORD_FILEPATH, "a") as f:
+			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
+			writer.writerow(new_dict)
+	else:
+		with open(EVENT_TRIGGER_RECORD_FILEPATH, "w") as f:
+			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
+			writer.writeheader()
+			writer.writerow(new_dict)
+"""
 
 #Update year and associated global URLs
 def updateYear(newYear):
@@ -112,27 +186,34 @@ def getRemainingValues_MOA(eventPageSoup, ID):
 	logger.debug("Updated values: " + str(updateValues))
 	return updateValues
 
-def MOA_to_OGLE(eventName):
+def convertEventName(eventName, MOAtoOGLE=True):
 	crossReferenceURL = MOA_dir + "/moa2ogle.txt"
 	crossReferenceRequest = requests.get(crossReferenceURL, verify=False)
 	crossReference = crossReferenceRequest.content.splitlines()
-	eventName_MOA = "MOA-" + eventName
-	eventName_OGLE = ""
+	if MOAtoOGLE:
+		initialSurvey = "MOA"
+		finalSurvey = "OGLE"
+	else:
+		initialSurvey = "OGLE"
+		finalSurvey = "MOA"
+
+	eventName_initial = initialSurvey + "-" + eventName
+	eventName_final = ""
 	for line in reversed(crossReference):
 		if line[0] != "#":
 			lineSplit = line.split()
-			if lineSplit[0] == eventName_MOA:
-				eventName_OGLE = lineSplit[2]
+			if lineSplit[0] == eventName_initial:
+				eventName_final = lineSplit[2]
 				break
-			if lineSplit[2] == eventName_MOA:
-				eventName_OGLE = lineSplit[0]
+			if lineSplit[2] == eventName_initial:
+				eventName_final = lineSplit[0]
 				break
-	if eventName_OGLE == "":
+	if eventName_final == "":
 		return None
 	else:
-		eventName_final = eventName_OGLE[5:]
-		logger.debug("MOA to OGLE converted name: " + str(eventName_final))
-		return eventName_final
+		eventName_output = eventName_final[(len(finalSurvey) + 1):]
+		logger.debug(initialSurvey + " to " + finalSurvey + " converted name: " + str(eventName_final))
+		return eventName_output
 
 def getValues_OGLE(eventName):
 	nameURL = eventName[5:].lower()
@@ -263,7 +344,7 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 		filename = "OB"
 	filename += eventName[2:4] + "%04d" % int(eventName[9:])
 	modelFilepath = os.path.join(ARTEMIS_DIR, filename + ".model")
-	if os.path.isfile(modelFilepath) == False:
+	if not os.path.isfile(modelFilepath):
 		return None
 	with open(modelFilepath,'r') as file:
 		line = file.readline()
@@ -281,11 +362,34 @@ def getValues_ARTEMIS(eventName, isMOA=True):
 		logger.info("ARTEMIS OGLE values: " + str(values))
 	return values
 
-#values_MOA keywords: name, assessment, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, lCurve
+#values_MOA keywords: name, assessment, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, lCurve, RA, Dec
 #values_OGLE keywords: name, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed
 #values_ARTEMIS_MOA: name, tMax, tE, u0
-def buildOutputString(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE):
-	outputString = \
+def buildOutputString(values_dict):
+	if values_dict.has_key("MOA"):
+		values_MOA = values_dict["MOA"]
+	else:
+		values_MOA = None
+
+	if values_dict.has_key("OGLE"):
+		values_OGLE = values_dict["OGLE"]
+	else:
+		values_OGLE = None
+
+	if values_dict.has_key("ARTEMIS_MOA"):
+		values_ARTEMIS_MOA = values_dict["ARTEMIS_MOA"]
+	else:
+		values_ARTEMIS_MOA = None
+
+	if values_dict.has_key("ARTEMIS_OGLE"):
+		values_ARTEMIS_OGLE = values_dict["ARTEMIS_OGLE"]
+	else:
+		values_ARTEMIS_OGLE = None
+
+	outputString = ""
+
+	if values_MOA is not None:
+		outputString += \
 """MOA event: <br>
 Event: <a href=%s>%s</a> <br>
 Assessment: %s <br>
@@ -299,7 +403,6 @@ Light Curve: <br>
 """ % (values_MOA["pageURL"], values_MOA["name"], values_MOA["assessment"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
 		values_MOA["tE"], values_MOA["tE_err"], values_MOA["u0"], values_MOA["u0_err"], values_MOA["mag"], values_MOA["mag_err"], \
 		values_MOA["lCurve"])
-
 
 	if values_OGLE is not None:
 		outputString += \
@@ -362,15 +465,16 @@ u0: %s +/-%s\
 	return outputString
 
 def main():
-	test1()
+	test2()
 
 def test1():
 	#MOA 2015-BLG-501
 	#testID = "gb4-R-8-58133"
 	#updateYear("2015")
-	testID = "gb14-R-2-53554"	
+	#testID = "gb14-R-2-53554"	
+	testID = "gb19-R-7-5172"
 	values_MOA = getValues_MOA(testID)
-	name_OGLE = MOA_to_OGLE(values_MOA["name"])
+	name_OGLE = convertEventName(values_MOA["name"], MOAtoOGLE=True)
 	values_OGLE = getValues_OGLE(name_OGLE)
 	values_ARTEMIS_MOA = getValues_ARTEMIS(values_MOA["name"], isMOA=True)
 	values_ARTEMIS_OGLE = getValues_ARTEMIS(name_OGLE, isMOA=False)
@@ -391,6 +495,29 @@ def test1():
 	print outputString
 	with open(EVENT_FILEPATH, 'w') as outputTest:
 		outputTest.write(outputString)
+
+def test2():
+	testID = "gb19-R-7-5172"
+	updateYear("2016")
+
+	values_MOA = getValues_MOA(testID)
+	values_MOA.update({"RA":str(274.573436176), "Dec":str(-25.739123955)})
+	name_OGLE = convertEventName(values_MOA["name"], MOAtoOGLE=True)
+	values_OGLE = getValues_OGLE(name_OGLE)
+	values_ARTEMIS_MOA = getValues_ARTEMIS(values_MOA["name"], isMOA=True)
+	values_ARTEMIS_OGLE = getValues_ARTEMIS(name_OGLE, isMOA=False)
+
+	output_dict = {}
+	if values_MOA is not None:
+		output_dict["MOA"] = values_MOA
+	if values_OGLE is not None:
+		output_dict["OGLE"] = values_OGLE
+	if values_ARTEMIS_MOA is not None:
+		output_dict["ARTEMIS_MOA"] = values_ARTEMIS_MOA
+	if values_ARTEMIS_OGLE is not None:
+		output_dict["ARTEMIS_OGLE"] = values_ARTEMIS_OGLE
+
+	outputTable(output_dict)
 
 if __name__ == "__main__":
 	main()

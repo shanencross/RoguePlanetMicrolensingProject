@@ -13,17 +13,17 @@ from datetime import datetime
 from bs4 import BeautifulSoup #html parsing
 import csv
 
-import summaryLoggerSetup
+import loggerSetup
 import updateCSV
 
 requests.packages.urllib3.disable_warnings()
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "eventDataCollectionLog")
+LOG_DIR = os.path.join(sys.path[0], "logs/eventDataCollectionLog")
 LOG_NAME = "eventDataCollectionLog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
-logger = summaryLoggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
+logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 MAX_MAG_ERR = 0.7
 
@@ -40,16 +40,18 @@ OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
 #OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
 
 #comment this out when saving as in-use copy
+"""
 EVENT_FILENAME = "summaryPageTest.html"
 EVENT_DIR = os.path.join(sys.path[0], "summaryPageOutputTests")
 EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
 if not os.path.exists(EVENT_DIR):
 	os.makedirs(EVENT_DIR)
+"""
 
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
 SUMMARY_OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventSummaryPages"
 #change SUMMARY_OUTPUT_DIR to the following when saving as in-use copy.
-"""
+
 #NOTE: Temporarily, output hardcoded to 2015 robonet log directory with TEMP_YEAR. Outputting to 2016 folder results 
 #in dead links #to summaries in email alerts. Only 2015 folder uploads to current URLs. Is the 2016 folder uploading to somewhere
 #else on the server?
@@ -57,8 +59,8 @@ SUMMARY_OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingPr
 #NOTE 2: TEMP_YEAR isn't working anymore, so perhaps they updated things? No files from the 2015 folder are on the 
 #server anymore, only those in the 2016 folder. Now using CURRENT_YEAR instead.
 #TEMP_YEAR = "2015"
-SUMMARY_OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/eventSummaryPages"
-"""
+#SUMMARY_OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/eventSummaryPages"
+
 
 EVENT_TRIGGER_RECORD_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventTriggerRecord"
 #change EVENT_TRIGGER_RECORD_DIR to the following when saving as in-use copy:

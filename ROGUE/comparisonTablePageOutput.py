@@ -3,7 +3,6 @@ comparisonTablePageOutput.py
 Author: Shanen Cross
 Purpose: Given list of combined ROGUE/TAP dictionaries from compareEventTables.py, ouput comparison table HTML page. 
 """
-
 import sys
 import os
 from datetime import datetime
@@ -11,7 +10,7 @@ import logging
 
 import loggerSetup
 
-LOG_DIR = os.path.join(sys.path[0], "comparisonTablePageOutputLog")
+LOG_DIR = os.path.join(sys.path[0], "logs/comparisonTablePageOutputLog")
 LOG_NAME = "comparisonTablePageOutputLog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
@@ -44,12 +43,15 @@ COMBINED_FIELDNAMES = ["name_MOA", "name_OGLE", "RA_MOA", "Dec_MOA", "ROGUE trig
 					   "mag_err_MOA"] 
 
 def outputComparisonPage(eventList, comparisonPageFilepath):
+	logger.info("------------------------------------------------------------------------------")
 	"""Given sorted list of events and output path, print comparison table to file."""
 
 	with open(comparisonPageFilepath, "w") as myFile:
 		printPageStart(myFile)
 		printEventList(eventList, myFile)
 		printPageEnd(myFile)
+
+	logger.info("------------------------------------------------------------------------------")
 
 def printEventList(eventList, myFile):
 	"""Print row for each event within table."""

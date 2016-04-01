@@ -9,8 +9,16 @@ import sys
 import requests
 import csv
 from bs4 import BeautifulSoup
+import logging
 
+import loggerSetup
 import updateCSV
+
+# Set up logger
+LOG_DIR = os.path.join(sys.path[0], "logs/TAPtableRecordingLog")
+LOG_NAME = "TAPtableRecordingLog"
+LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
+logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
 # local script imports
 #from compareEventTables import compareEvents
@@ -22,7 +30,7 @@ TEST_TAP_TARGET_TABLE_FILEPATH = "/home/scross/Documents/Workspace/RoguePlanetMi
 onlineTAPevents = {}
 
 # set up and create ouptut directory and filename for TAP target table
-TAP_TARGET_TABLE_OUTPUT_FILENAME = "TAP_target_table.csv"
+TAP_TARGET_TABLE_OUTPUT_FILENAME = "TAPtargetTable.csv"
 TAP_TARGET_TABLE_OUTPUT_DIR = os.path.join(sys.path[0], "TAPtargetTable")
 TAP_TARGET_TABLE_OUTPUT_FILEPATH = os.path.join(TAP_TARGET_TABLE_OUTPUT_DIR, TAP_TARGET_TABLE_OUTPUT_FILENAME)
 if not os.path.exists(TAP_TARGET_TABLE_OUTPUT_DIR):
@@ -36,15 +44,17 @@ def updateTable():
 	# Load local HTML file as TAP Target webpage if testing the script. 
 	# If running the script for real, access the online TAP target page.
 	if LOCAL_TEST_ONLY:
+		logger.info("Running test with local file for TAP target table...")
+		logger.info("Opening local page %s..." % (TEST_TAP_TARGET_TABLE_FILEPATH))
 		#print "This is a local test. Opening local page %s..." % (TEST_TAP_TARGET_TABLE_FILEPATH)
 		with open(TEST_TAP_TARGET_TABLE_FILEPATH, 'r') as pageFile:
-			#print "File opened."
+			logger.info("File opened.")
 			targetListSoup = BeautifulSoup(pageFile, "lxml") 
 	else:
-		#print "This is not a local test. Opening online page %s..." % (TAP_TARGET_TABLE_URL)
+		logger.info("This is not a local test. Opening online page %s..." % (TAP_TARGET_TABLE_URL))
 		targetListSoup = BeautifulSoup(requests.get(TAP_TARGET_TABLE_URL, verify=False).content, "lxml")
 
-	#print "Page soup acquired:\n" + targetListSoup.prettify()
+	logger.debug("Page soup acquired:\n" + targetListSoup.prettify())
 
 	# Navigate to the webpage's event table with Beautiful Soup
 	events = targetListSoup.find("table").find_all("tr")[1:]
@@ -84,7 +94,7 @@ def updateTable():
 		# The outer dictionary uses event names as keys, each pointing to an event dictionary as a value.
 		eventDict = {"name_TAP": eventName_full, "priority_TAP": eventPriority, "mag_TAP": eventMag, "tE_TAP": event_tE, "tE_err_TAP": event_tE_err}
 		onlineTAPevents[eventName_full] = eventDict
-		#print "Obtained event dictionary: %s" % (str(eventDict))
+		logger.debug("Obtained event dictionary: %s" % (str(eventDict)))
 	#print "Obtained online TAP table: %s" % (str(onlineTAPevents))
 
 def printOnlineTable():
@@ -99,7 +109,7 @@ def saveTable():
 	# Column field names for table
 	fieldnames = ["name_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP"]
 	delimiter = ","
-
+	logger.info("Update .csv file with events using updateCSV script...")
 	updateCSV.update(TAP_TARGET_TABLE_OUTPUT_FILEPATH, onlineTAPevents, fieldnames=fieldnames, delimiter=delimiter)
 
 	"""
@@ -164,11 +174,20 @@ def saveTable():
 				#print "Writing event dictionary: " + str(eventDict)
 				writer.writerow(eventDict)
 		"""
+def updateAndSaveTable():
+	logger.info("------------------------------------------------------------------------------")
+	updateTable()
+	saveTable()
+	logger.info("------------------------------------------------------------------------------")
+
 def main():
+	updateAndSaveTable()	
+	"""
 	updateTable()
 	#printOnlineTable()
 	#print "Online TAP events: " + str(onlineTAPevents)
 	saveTable()
+	"""
 
 if __name__== "__main__":
 	main()

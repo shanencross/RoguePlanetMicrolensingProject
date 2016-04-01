@@ -1,10 +1,10 @@
 """
-webpageAccess.py
+ROGUE.py
 IN-PROGRESS WORKING COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2016-03-18
+Date: 2016-03-31
 """
 """
 Note: Does not currently account for corresponding MOA and OGLE events possibly having different years.
@@ -32,8 +32,8 @@ requests.packages.urllib3.disable_warnings() # to disable warnings when accessin
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "logs")
-LOG_NAME = "webpageAccessLog"
+LOG_DIR = os.path.join(sys.path[0], "logs/ROGUELog")
+LOG_NAME = "ROGUELog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
@@ -105,7 +105,7 @@ MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 # Golbal dictionary of event triggers to update .csv file with
 eventTriggerDict = {}
 
-def main():
+def runROGUE():
 	logger.info("---------------------------------------")
 	logger.info("Starting program")
 	logger.info("Storing newest event in: " + EVENT_FILEPATH)
@@ -450,6 +450,9 @@ Event summary page: %s\
 """ % (eventName, values_MOA["ID"], values_MOA["tE"], values_MOA["pageURL"], summaryPageURL)
 	mailAlert.send_alert(messageText, mailSubject, MAILING_LIST)
 	logger.info("Event alert mailed!")
+
+def main():
+	runROGUE()
 
 if __name__ == "__main__":
 	main()

@@ -11,7 +11,7 @@ import comparisonTablePageOutput
 from dataCollectionAndOutput import eventDataCollection #TEMP - WON'T WORK - HOW TO IMPORT FROM SUBDIR OF PARENT DIR?
 import loggerSetup
 
-LOG_DIR = os.path.join(sys.path[0], "eventTablesComparisonLog")
+LOG_DIR = os.path.join(sys.path[0], "logs/eventTablesComparisonLog")
 LOG_NAME = "eventTablesComparisonLog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
@@ -186,10 +186,12 @@ def compareEventDicts(ROGUEevents, TAPevents):
 	return combinedEvents_list
 
 def compareAndOutput(ROGUEfilepath, TAPfilepath, comparisonPageFilepath):
+	logger.info("------------------------------------------------------------------------------")
 	logger.info("Comparing tables...")
 	combinedEvents_list = compareTables(ROGUEfilepath, TAPfilepath)
 	logger.info("Outputting comparison page...")
 	comparisonTablePageOutput.outputComparisonPage(combinedEvents_list, comparisonPageFilepath)
+	logger.info("------------------------------------------------------------------------------")
 
 def test_dicts():
 	ROGUEevents = {"OGLE-2016-BLG-0229": {"name_OGLE":"OGLE-2016-BLG-0229", "tE_OGLE":"4.8"}, \
