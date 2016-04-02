@@ -11,6 +11,12 @@ import logging
 import ROGUE
 import TAPtableRecording
 import loggerSetup
+import mailAlert
+
+# if already running, return
+if os.popen("ps -Af").read().count(__file__) > 1:
+	mailAlert.send_alert("ROGUE code exited because it was already running", "ROGUE code exited", ["shanencross@gmail.com"])
+	sys.exit(0)
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
