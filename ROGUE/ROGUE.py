@@ -1,6 +1,6 @@
 """
 ROGUE.py
-IN-PROGRESS WORKING COPY
+IN-USE ACTIVE COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
@@ -123,7 +123,9 @@ def runROGUE():
 	if not os.path.isfile(EVENT_FILEPATH):
 		localEvent = ""
 		checkEvents(localEvent, index)
-		saveAndCompareTriggers()
+		# update CSV trigger record and output TAP comparison table if trigger dictionary is NOT empty
+		if eventTriggerDict:
+			saveAndCompareTriggers()
 		with open(EVENT_FILEPATH, 'w') as eventFile:
 			eventFile.write(newestEvent)
 
@@ -134,7 +136,9 @@ def runROGUE():
 		if newestEvent != localEvent:
 			# check over new events, evaluating each for observation triggering
 			checkEvents(localEvent, index)
-			saveAndCompareTriggers()
+			# update CSV trigger record and output TAP comparison table if trigger dictionary is NOT empty
+			if eventTriggerDict:
+				saveAndCompareTriggers()
 			# overwrite old local event with newest event after reading if updated is needed
 			with open(EVENT_FILEPATH, 'w') as eventFile:
 				# eventFile.seek(0)
