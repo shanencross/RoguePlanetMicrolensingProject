@@ -27,6 +27,7 @@ from dataCollectionAndOutput import eventDataCollection # collecting data from s
 import updateCSV
 import eventTablesComparison
 import mailAlert # script for sending emails by executing command line tool
+import observationTrigger
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
 
@@ -100,6 +101,8 @@ MAIL_ALERTS_ON = False
 SUMMARY_BUILDER_ON = True
 EVENT_TRIGGER_RECORD_ON = True
 EVENT_TABLE_COMPARISON_ON = True
+SIMULATE_ON = True
+
 MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 
 # Golbal dictionary of event triggers to update .csv file with
@@ -236,6 +239,11 @@ def eventTrigger(eventPageSoup, values_MOA):
 			except Exception as ex:
 				logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
 				logger.warning(ex)
+
+	if TRIGGER_OBSERVATION_ON:
+		# change for active in-use copy - simulate hardcoded to True for now for safety
+		#observationTrigger.triggerObservation(eventPageSoup, values_MOA, simulate=SIMULATE_ON)
+		observationTrigger.triggerEventObservation(eventPageSoup, values_MOA, simulate=True)
 
 def checkEinsteinTime(tE_string):
 	"""Check if Einstein time is short enough for observation."""
@@ -455,8 +463,9 @@ Event summary page: %s\
 	mailAlert.send_alert(messageText, mailSubject, MAILING_LIST)
 	logger.info("Event alert mailed!")
 
+
 def main():
-	runROGUE()
+	#runROGUE()
 
 if __name__ == "__main__":
 	main()

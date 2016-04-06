@@ -465,8 +465,10 @@ u0: %s +/-%s\
 
 	return outputString
 
-def main():
-	test2()
+def get_sexigesimal_RA_and_Dec(soup):
+	RA = soup.find(string="RA:").next_element.string
+	Dec = soup.find(string="Dec:").next_element.string
+	return {"RA": RA, "Dec": Dec}
 
 def test1():
 	#MOA 2015-BLG-501
@@ -519,6 +521,9 @@ def test2():
 		output_dict["ARTEMIS_OGLE"] = values_ARTEMIS_OGLE
 
 	outputTable(output_dict)
+
+def main():
+	test2()
 
 if __name__ == "__main__":
 	main()
