@@ -1,7 +1,7 @@
 """
 eventDataCollection.py
 IN-PROGRESS WORKING COPY
-Author: Shanen Cross
+@author: Shanen Cross
 Date: 2016-03-21
 Purpose: 
 """
