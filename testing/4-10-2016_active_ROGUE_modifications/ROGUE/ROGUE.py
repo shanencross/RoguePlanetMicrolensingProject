@@ -518,7 +518,7 @@ def sendMailAlert(values_MOA):
 	alertLevel = alertLevelDict["alert level"]
 	alertLevelMessage = alertLevelDict["message"]
 
-	mailSubject = eventName + " - Short Duration Microlensing Event " + str(alertLevel)
+	mailSubject = eventName + " - Potential Short Duration Microlensing Event " + str(alertLevel)
 	summaryPageURL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + eventName + "_summary.html"
 	messageText = \
 """\
