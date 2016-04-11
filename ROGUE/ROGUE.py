@@ -30,12 +30,17 @@ import mailAlert # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
 
+DEBUGGING_MODE = False # Turn this flag on if modifying and testing code - turn it off when actively being used
+
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
 LOG_DIR = os.path.join(sys.path[0], "logs/ROGUElog")
 LOG_NAME = "ROGUElog"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
-logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
+if DEBUGGING_MODE:
+	logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=True, consoleOutputLevel = "DEBUG")
+else:
+	logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=False, consoleOutputLevel = "DEBUG")
 
 # set up filepath and directory for local copy of newest microlensing event
 EVENT_FILENAME = "lastEvent.txt"
@@ -56,9 +61,11 @@ COMPARISON_TABLE_FILEPATH = os.path.join(COMPARISON_TABLE_DIR, COMPARISON_TABLE_
 if not os.path.exists(COMPARISON_TABLE_DIR):
 	os.makedirs(COMPARISON_TABLE_DIR)
 
-# set year as constant using current date/time, for accessing URLs
-CURRENT_YEAR = str(datetime.utcnow().year)
-#CURRENT_YEAR = "2015" #TEMPORARY FOR TESTING/DEBUGGING - CHANGE TO ABOVE LINE
+if DEBUGGING_MODE:
+	CURRENT_YEAR = "2016" #TEMPORARY FOR TESTING/DEBUGGING - CHANGE TO LINE BELOW
+else:
+	# set year as constant using current date/time, for accessing URLs
+	CURRENT_YEAR = str(datetime.utcnow().year)
 
 # setup URL paths for website event index and individual pages
 WEBSITE_URL = "https://it019909.massey.ac.nz/moa/alert" + CURRENT_YEAR + "/"
@@ -80,7 +87,9 @@ BASELINE_MAG_INDEX = 7
 MAX_EINSTEIN_TIME = 3 # days - only check events as short or shorter than this
 MIN_MAG = 17.5 # magnitude units - only check events as bright or brighter than this
 			   # (i.e. numerically more negative values)
-MAX_MAG_ERR = 0.7 # magnitude unites - maximum error allowed for a mag
+MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
+EINSTEIN_TIME_ERROR_ALERT_THRESHOLD = 5 # days - if Einstein Time error is less than this, email is labeled "Event Alert"; 
+										# otherwise email is labeled "Event Warning"
 
 EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
 EVENT_TRIGGER_RECORD_FILENAME = "eventTriggerRecord.csv"
@@ -96,12 +105,20 @@ FIELDNAMES = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", 
 DELIMITER = ","
 
 # Flag for mail alerts functionality and list of mailing addresses
-MAIL_ALERTS_ON = True
-SUMMARY_BUILDER_ON = True
-EVENT_TRIGGER_RECORD_ON = True
-EVENT_TABLE_COMPARISON_ON = True
-MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
-				"yossishv@gmail.com", "robonet-ops@lcogt.net"]
+if DEBUGGING_MODE:
+	MAIL_ALERTS_ON = True
+	SUMMARY_BUILDER_ON = True
+	EVENT_TRIGGER_RECORD_ON = True
+	EVENT_TABLE_COMPARISON_ON = True
+	MAILING_LIST = ["shanencross@gmail.com"]
+
+else:
+	MAIL_ALERTS_ON = True
+	SUMMARY_BUILDER_ON = True
+	EVENT_TRIGGER_RECORD_ON = True
+	EVENT_TABLE_COMPARISON_ON = True
+	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
+					"yossishv@gmail.com", "robonet-ops@lcogt.net"]
 
 # Golbal dictionary of event triggers to update .csv file with
 eventTriggerDict = {}
@@ -192,14 +209,7 @@ def evaluateEvent(splitEvent):
 
 	# evaluate Einstein time, microlensing vs. cv status, and magnitude
 	# for whether to trigger observation
-	if checkEinsteinTime(values_MOA["tE"]):
-		if checkMicrolensRegion(values_MOA["RA"], values_MOA["Dec"]):
-			evaluateEventPage_MOA(values_MOA)
-		else:
-			logger.info("Microlensing region failed: Not in K2 Campaign 9 microlensing region")
-	# fail to trigger if Einstein time is unacceptable
-	else:
-		logger.info("Einstein time failed: must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
+	evaluateEventPage_MOA(values_MOA)
 
 def eventTrigger(eventPageSoup, values_MOA):
 	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
@@ -238,14 +248,33 @@ def eventTrigger(eventPageSoup, values_MOA):
 				logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
 				logger.warning(ex)
 
-def checkEinsteinTime(tE_string):
+def checkEinsteinTime(tE_string, tE_err_string=None):
 	"""Check if Einstein time is short enough for observation."""
 	einsteinTime = float(tE_string)
 	logger.info("Einstein Time: " + str(einsteinTime) + " days")
-	if einsteinTime <= MAX_EINSTEIN_TIME:
-		return True
+
+	if tE_err_string != None and tE_err_string != "":
+		einsteinTime_err = float(tE_err_string)
+		logger.info("Einstein Time Error: " + str(einsteinTime_err) + " days")
+
+		einsteinTime_lowerBound = einsteinTime - einsteinTime_err
+		logger.info("Einstein Time Lower Bound = %s - %s = %s days" % (str(einsteinTime), str(einsteinTime_err), str(einsteinTime_lowerBound)))
+
 	else:
-		return False
+		logger.info("No error given for Einstein time. Using given Einstein Time value as lower bound for comparison with max Einstein Time threshold.")
+		einsteinTime_lowerBound = einsteinTime
+		logger.info("Einstein Time Lower Bound = %s days" % str(einsteinTime_lowerBound))
+
+	einsteinTimeCheck = (einsteinTime_lowerBound <= MAX_EINSTEIN_TIME)
+
+	return einsteinTimeCheck
+
+def getEinsteinTime_err_MOA(eventPageSoup):
+	"""Return string of Einstein Time error from event page soup."""
+
+	microTable = eventPageSoup.find(id="micro").find_all('tr')
+	tE_err = float(microTable[1].find_all('td')[4].string.split()[0])
+	return str(tE_err)
 
 def checkMicrolensRegion(RA_string, Dec_string):
 	"""Check if strings RA and Dec coordinates are within K2 Campaign 9 microlensing region (units: degrees)."""
@@ -257,14 +286,37 @@ def checkMicrolensRegion(RA_string, Dec_string):
 	# pass to K2fov.c9 module method (from the K2 tools) to get whether coordinates are in the region
 	return inMicrolensRegion(RA, Dec)
 
+def getEventPageSoup_MOA(values_MOA):
+	"""Return event page Soup from inital MOA values (must contain MOA ID at least). 
+	   Also add event page URL to values dictionary parameter."""
 
-def evaluateEventPage_MOA(values_MOA):
-	"""Continue evaluating event using information from the MOA event page."""
-	# access MOA event page and get soup of page for parsing more values
 	eventPageURL = WEBSITE_URL + EVENT_PAGE_URL_DIR + values_MOA["ID"]
 	values_MOA["pageURL"] = eventPageURL
 	eventPageSoup = BeautifulSoup(requests.get(eventPageURL, verify=False).content, 'lxml')
+	return eventPageSoup
 
+def evaluateEventPage_MOA(values_MOA):
+	"""Evaluate event using information from the MOA event page."""
+
+	# Acquire soup of event page using MOA ID, and add event page URL to value dictionary
+	eventPageSoup = getEventPageSoup_MOA(values_MOA)
+
+	# Get Einstein Time error from event page and add to values
+	einsteinTime_err = getEinsteinTime_err_MOA(eventPageSoup)
+	values_MOA["tE_err"] = einsteinTime_err
+
+	# Check if event passes Einstein Time test
+	if checkEinsteinTime(values_MOA["tE"], values_MOA["tE_err"]):
+		# Check if event passes K2 microlensing region test
+		if checkMicrolensRegion(values_MOA["RA"], values_MOA["Dec"]):
+			evaluateAssessmentAndMag_MOA(eventPageSoup, values_MOA)
+		else:
+			logger.info("Microlensing region failed: Not in K2 Campaign 9 microlensing region")
+	# fail to trigger if Einstein Time lower bound (Einstein time - Einstein time error) exceeds max Einstein Time threshold
+	else:
+		logger.info("Einstein time failed: lower bound must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
+
+def evaluateAssessmentAndMag_MOA(eventPageSoup, values_MOA):
 	# Parse page soup for microlensing assessment of event
 	assessment = getMicrolensingAssessment(eventPageSoup)
 	values_MOA["assessment"] = assessment
@@ -283,7 +335,7 @@ def evaluateEventPage_MOA(values_MOA):
 		else:
 			logger.info("Magnitude failed: must be brighter than " + str(MIN_MAG) + " AND have error less than " + str(MAX_MAG_ERR))
 
-	# fail to trigger of assessment is non-microlensing
+	# fail to trigger if assessment is non-microlensing
 	else:
 		logger.info("Assessment failed: Not assessed as microlensing")
 
@@ -395,27 +447,29 @@ def convertDataDict(eventDataDict):
 	We convert this to a single dictionary with items from all surveys, and keys with survey suffixes attached
 	to distinguish, for examle, tE_MOA from the tE_OGLE.
 	"""
+	logger.debug("Original event dict: " + str(eventDataDict))
+
 	convertedEventDict = {}
 
 	for fieldname in FIELDNAMES:
 		if fieldname[-12:] == "_ARTEMIS_MOA" and eventDataDict.has_key("ARTEMIS_MOA") and eventDataDict["ARTEMIS_MOA"] != "":
 			convertedEventDict[fieldname] = eventDataDict["ARTEMIS_MOA"][fieldname[:-12]]
 
-		elif fieldname[-4:] == "_MOA" and eventDataDict.has_key("MOA") and eventDataDict["MOA"] != "":
+		elif fieldname[-4:] == "_MOA" and fieldname[-12:] != "_ARTEMIS_MOA" and eventDataDict.has_key("MOA") and eventDataDict["MOA"] != "":
 			convertedEventDict[fieldname] = eventDataDict["MOA"][fieldname[:-4]]
 
 		elif fieldname[-13:] == "_ARTEMIS_OGLE" and eventDataDict.has_key("ARTEMIS_OGLE") and eventDataDict["ARTEMIS_OGLE"] != "":
 			convertedEventDict[fieldname] = eventDataDict["ARTEMIS_OGLE"][fieldname[:-13]]
 
-		elif fieldname[-5:] == "_OGLE" and eventDataDict.has_key("OGLE") and eventDataDict["OGLE"] != "":
+		elif fieldname[-5:] == "_OGLE" and fieldname[-13:] != "_ARTEMIS_OGLE" and eventDataDict.has_key("OGLE") and eventDataDict["OGLE"] != "":
 			convertedEventDict[fieldname] = eventDataDict["OGLE"][fieldname[:-5]]
 
 		# Convert the shortened names such as "2016-BLG-123" to the full names with survey prefixes,
 		# like "MOA-2016-BLG-123" or "OGLE-2016"BLG-123";
 		# Last condition Probably not necessary, but just in case
 		if fieldname[:5] == "name_" and convertedEventDict.has_key(fieldname) and convertedEventDict[fieldname] != "":
-				surveyName = fieldname[5:]
-				convertedEventDict[fieldname] = surveyName + "-" + convertedEventDict[fieldname]
+			surveyName = fieldname[5:]
+			convertedEventDict[fieldname] = surveyName + "-" + convertedEventDict[fieldname]
 
 		logger.debug("Converted event dict: " + str(convertedEventDict))
 
@@ -439,20 +493,45 @@ def saveAndCompareTriggers():
 				logger.warning("Exception generating/outputting comparison table HTML page")
 				logger.warning(ex)		
 
+def getAlertLevelAndMessage(values_MOA):
+	"""Return alert level as "Warning" or "Alert" and related message depending on whether tE error exceeds our threshold constant""" 
+
+	message = "Because the Einstein Time error is"
+	tE_err = float(values_MOA["tE_err"])
+
+	if tE_err <= EINSTEIN_TIME_ERROR_ALERT_THRESHOLD:
+		alertLevel = "Alert"
+		message += " smaller than an error threshold of " + str(EINSTEIN_TIME_ERROR_ALERT_THRESHOLD)
+	else:
+		alertLevel = "Warning"
+		message += " greater than an error threshold of " + str(EINSTEIN_TIME_ERROR_ALERT_THRESHOLD)
+
+	message += " days, this email has been given the status of \"Event %s\"." % str(alertLevel)
+	alertDict = {"alert level": alertLevel, "message": message}
+	logger.info("Event alert level: Event " + str(alertDict["alert level"]))
+	
+	return alertDict
+
 def sendMailAlert(values_MOA):
 	"""Send mail alert upon detecting short duration microlensing event"""
 	eventName = values_MOA["name"]
-	mailSubject = eventName + " - Short Duration Microlensing Event Alert"
+
+	alertLevelDict = getAlertLevelAndMessage(values_MOA)
+	alertLevel = alertLevelDict["alert level"]
+	alertLevelMessage = alertLevelDict["message"]
+
+	mailSubject = eventName + " - Potential Short Duration Microlensing Event " + str(alertLevel)
 	summaryPageURL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + eventName + "_summary.html"
 	messageText = \
 """\
-Short Duration Microlensing Event Alert
+Potential Short Duration Microlensing Event %s
+%s
 Event Name: %s
 Event ID: %s
-Einstein Time (MOA): %s
+Einstein Time (MOA): %s +/- %s
 MOA Event Page: %s
 Event summary page: %s\
-""" % (eventName, values_MOA["ID"], values_MOA["tE"], values_MOA["pageURL"], summaryPageURL)
+""" % (alertLevel, alertLevelMessage, eventName, values_MOA["ID"], values_MOA["tE"], values_MOA["tE_err"], values_MOA["pageURL"], summaryPageURL)
 	mailAlert.send_alert(messageText, mailSubject, MAILING_LIST)
 	logger.info("Event alert mailed!")
 

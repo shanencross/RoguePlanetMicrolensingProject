@@ -18,6 +18,8 @@ import updateCSV
 
 requests.packages.urllib3.disable_warnings()
 
+DEBUGGING_MODE = False # Turn this flag on if modifying and testing code - turn it off when actively being used
+
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
 LOG_DIR = os.path.join(sys.path[0], "logs/eventDataCollectionLog")
@@ -36,38 +38,47 @@ eventYear = CURRENT_YEAR
 #MOA and OGLE directories set to current year by defaultr; 
 #buildPage() changes these if passed event from different year
 MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + eventYear
-OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
-#OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
+if DEBUGGING_MODE:
+	OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
+else:
+	OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
 
 #comment this out when saving as in-use copy
-"""
-EVENT_FILENAME = "summaryPageTest.html"
-EVENT_DIR = os.path.join(sys.path[0], "summaryPageOutputTests")
-EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
-if not os.path.exists(EVENT_DIR):
-	os.makedirs(EVENT_DIR)
-"""
+if DEBUGGING_MODE:
+	EVENT_FILENAME = "summaryPageTest.html"
+	EVENT_DIR = os.path.join(sys.path[0], "summaryPageOutputTests_debugging")
+	EVENT_FILEPATH = os.path.join(EVENT_DIR, EVENT_FILENAME)
+	if not os.path.exists(EVENT_DIR):
+		os.makedirs(EVENT_DIR)
 
 ARTEMIS_DIR = "/science/robonet/rob/Operations/Signalmen_output/model"
-#SUMMARY_OUTPUT_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventSummaryPages"
-#change SUMMARY_OUTPUT_DIR to the following when saving as in-use copy.
-#NOTE: Temporarily, output hardcoded to 2015 robonet log directory with TEMP_YEAR. Outputting to 2016 folder results 
-#in dead links #to summaries in email alerts. Only 2015 folder uploads to current URLs. Is the 2016 folder uploading to somewhere
-#else on the server?
+if DEBUGGING_MODE:
+	SUMMARY_OUTPUT_DIR = os.path.join(sys.path[0], "eventSummaryPages_debugging")
+	if not os.path.exists(SUMMARY_OUTPUT_DIR):
+		os.makedirs(SUMMARY_OUTPUT_DIR)
+else:
+	#change SUMMARY_OUTPUT_DIR to the following when saving as in-use copy.
+	#NOTE: Temporarily, output hardcoded to 2015 robonet log directory with TEMP_YEAR. Outputting to 2016 folder results 
+	#in dead links #to summaries in email alerts. Only 2015 folder uploads to current URLs. Is the 2016 folder uploading to somewhere
+	#else on the server?
 
-#NOTE 2: TEMP_YEAR isn't working anymore, so perhaps they updated things? No files from the 2015 folder are on the 
-#server anymore, only those in the 2016 folder. Now using CURRENT_YEAR instead.
-#TEMP_YEAR = "2015"
-SUMMARY_OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/eventSummaryPages"
+	#NOTE 2: TEMP_YEAR isn't working anymore, so perhaps they updated things? No files from the 2015 folder are on the 
+	#server anymore, only those in the 2016 folder. Now using CURRENT_YEAR instead.
+	#TEMP_YEAR = "2015"
+	SUMMARY_OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/eventSummaryPages"
 
+"""
+if DEBUGGING_MODE:
+	EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord_debugging")
+else:
+	# change EVENT_TRIGGER_RECORD_DIR to the following when saving as in-use copy:
+	EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
 
-# EVENT_TRIGGER_RECORD_DIR = "/home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/webpageAccess/testing/eventTriggerRecord"
-# change EVENT_TRIGGER_RECORD_DIR to the following when saving as in-use copy:
-EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
 EVENT_TRIGGER_RECORD_FILENAME = "eventTriggerRecord.csv"
 EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRIGGER_RECORD_FILENAME)
 if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
 	os.makedirs(EVENT_TRIGGER_RECORD_DIR)
+"""
 
 #values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks, RA, Dec
 #values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurveZoomed, remarks

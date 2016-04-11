@@ -9,10 +9,8 @@ import sys
 import os
 import logging
 from datetime import datetime
-CONSOLE_OUTPUT_ON = False
-CONSOLE_OUTPUT_LEVEL = "DEBUG" # INFO, DEBUG, WARNING... something else
 
-def setup(loggerName, logDir, logName, logDateTimeFormat):
+def setup(loggerName, logDir, logName, logDateTimeFormat, consoleOutputOn=False, consoleOutputLevel ="DEBUG"):
 	#create logger and construct filepath
 	logger = logging.getLogger(loggerName)
 	logDateTime = datetime.utcnow().strftime(logDateTimeFormat)
@@ -23,22 +21,22 @@ def setup(loggerName, logDir, logName, logDateTimeFormat):
 	if not os.path.exists(logDir):
 		os.makedirs(logDir)
 
-	if CONSOLE_OUTPUT_LEVEL == "DEBUG":
+	if consoleOutputLevel == "DEBUG":
 		logger.setLevel(logging.DEBUG)
-	elif CONSOLE_OUTPUT_LEVEL == "INFO":
+	elif consoleOutputLevel == "INFO":
 		logger.setLevel(logging.DEBUG)
-	elif CONSOLE_OUTPUT_LEVEL == "WARNING":
+	elif consoleOutputLevel == "WARNING":
 		logger.setLevel(logging.WARNING)
 	else: # Default
 		logger.setLevel(logging.DEBUG)
 
 	#set up file handler
 	fileHandler = logging.FileHandler(logFilepath) #for file output
-	if CONSOLE_OUTPUT_LEVEL == "DEBUG":
+	if consoleOutputLevel == "DEBUG":
 		fileHandler.setLevel(logging.DEBUG)
-	elif CONSOLE_OUTPUT_LEVEL == "INFO":
+	elif consoleOutputLevel == "INFO":
 		fileHandler.setLevel(logging.INFO)
-	elif CONSOLE_OUTPUT_LEVEL == "WARNING":
+	elif consoleOutputLevel == "WARNING":
 		fileHandler.setLevel(logging.WARNING)
 	else: # Default
 		fileHandler.setLevel(logging.DEBUG)
@@ -53,14 +51,14 @@ def setup(loggerName, logDir, logName, logDateTimeFormat):
 	logger.addHandler(fileHandler)
 
 	#repeat above steps for console handler if console output is turned on
-	if CONSOLE_OUTPUT_ON:
+	if consoleOutputOn:
 		consoleHandler = logging.StreamHandler() #for console output
 
-		if CONSOLE_OUTPUT_LEVEL == "DEBUG":
+		if consoleOutputLevel == "DEBUG":
 			consoleHandler.setLevel(logging.DEBUG)
-		elif CONSOLE_OUTPUT_LEVEL == "INFO":
+		elif consoleOutputLevel == "INFO":
 			consoleHandler.setLevel(logging.INFO)
-		elif CONSOLE_OUTPUT_LEVEL == "WARNING":
+		elif consoleOutputLevel == "WARNING":
 			consoleHandler.setLevel(logging.WARNING)
 		else: # Default
 			consoleHandler.setLevel(logging.DEBUG)

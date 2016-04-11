@@ -447,27 +447,29 @@ def convertDataDict(eventDataDict):
 	We convert this to a single dictionary with items from all surveys, and keys with survey suffixes attached
 	to distinguish, for examle, tE_MOA from the tE_OGLE.
 	"""
+	logger.debug("Original event dict: " + str(eventDataDict))
+
 	convertedEventDict = {}
 
 	for fieldname in FIELDNAMES:
 		if fieldname[-12:] == "_ARTEMIS_MOA" and eventDataDict.has_key("ARTEMIS_MOA") and eventDataDict["ARTEMIS_MOA"] != "":
 			convertedEventDict[fieldname] = eventDataDict["ARTEMIS_MOA"][fieldname[:-12]]
 
-		elif fieldname[-4:] == "_MOA" and eventDataDict.has_key("MOA") and eventDataDict["MOA"] != "":
+		elif fieldname[-4:] == "_MOA" and fieldname[-12:] != "_ARTEMIS_MOA" and eventDataDict.has_key("MOA") and eventDataDict["MOA"] != "":
 			convertedEventDict[fieldname] = eventDataDict["MOA"][fieldname[:-4]]
 
 		elif fieldname[-13:] == "_ARTEMIS_OGLE" and eventDataDict.has_key("ARTEMIS_OGLE") and eventDataDict["ARTEMIS_OGLE"] != "":
 			convertedEventDict[fieldname] = eventDataDict["ARTEMIS_OGLE"][fieldname[:-13]]
 
-		elif fieldname[-5:] == "_OGLE" and eventDataDict.has_key("OGLE") and eventDataDict["OGLE"] != "":
+		elif fieldname[-5:] == "_OGLE" and fieldname[-13:] != "_ARTEMIS_OGLE" and eventDataDict.has_key("OGLE") and eventDataDict["OGLE"] != "":
 			convertedEventDict[fieldname] = eventDataDict["OGLE"][fieldname[:-5]]
 
 		# Convert the shortened names such as "2016-BLG-123" to the full names with survey prefixes,
 		# like "MOA-2016-BLG-123" or "OGLE-2016"BLG-123";
 		# Last condition Probably not necessary, but just in case
 		if fieldname[:5] == "name_" and convertedEventDict.has_key(fieldname) and convertedEventDict[fieldname] != "":
-				surveyName = fieldname[5:]
-				convertedEventDict[fieldname] = surveyName + "-" + convertedEventDict[fieldname]
+			surveyName = fieldname[5:]
+			convertedEventDict[fieldname] = surveyName + "-" + convertedEventDict[fieldname]
 
 		logger.debug("Converted event dict: " + str(convertedEventDict))
 

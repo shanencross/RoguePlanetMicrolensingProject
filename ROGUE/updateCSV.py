@@ -1,6 +1,6 @@
 """
 updateCSV.py
-Author: Shanen Cross
+@author: Shanen Cross
 """
 import sys
 import os
@@ -22,13 +22,15 @@ def update(fileOutputPath, newDict, fieldnames, delimiter=","):
 		logger.info("File does not exist. Opening file for writing...")
 		with open(fileOutputPath, "w") as f:
 			logger.info("File opened for writing.")
+			logger.info("Writing file header...")
 			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writeheader()
 			newNameList = sorted(newDict)
-			logger.info("Sorted online events: " + str(newNameList))
+			logger.debug("Sorted online events: " + str(newNameList))
+			logger.info("Writing to file...")
 			for eventName in newNameList:
 				eventDict = newDict[eventName]
-				logger.info("Writing dict to file: " + str(eventDict))
+				#logger.info("Writing dict to file: " + str(eventDict))
 				writer.writerow(eventDict)
 
 	# if file does already exist, read the existing file, get the sorted combined list of names from both online and locally stored events,
@@ -56,12 +58,12 @@ def update(fileOutputPath, newDict, fieldnames, delimiter=","):
 					logger.warning("Error: Event row, " + str(row) + ", has no OGLE, MOA, or TAP name key.")
 					nameKey = ""
 
-				logger.debug("Event row, " + str(row) + ", has name key: " +  str(nameKey))
+				#logger.debug("Event row, " + str(row) + ", has name key: " +  str(nameKey))
 				eventName = row[nameKey]
-				logger.debug("Event name: " + str(eventName))
+				#logger.debug("Event name: " + str(eventName))
 				oldDict[eventName] = row
-				logger.debug("Stored event row " + str(row) + " in old dictionary with event name " + str(eventName) + " as key.")
-				logger.debug("Old dictionary: " + str(oldDict))
+				#logger.debug("Stored event row " + str(row) + " in old dictionary with event name " + str(eventName) + " as key.")
+				#logger.debug("Old dictionary: " + str(oldDict))
 
 			logger.debug("Local events: " + str(oldDict))
 			logger.debug("Online events: " + str(newDict))
@@ -74,14 +76,15 @@ def update(fileOutputPath, newDict, fieldnames, delimiter=","):
 			logger.debug("New name set: " + str(newNameSet))
 			logger.debug("Combined name set: " + str(newNameSet | oldNameSet))
 			logger.debug("Sorted Combined name list: " + str(combinedNameList))
-
+		logger.info("File read.")
 		logger.info("Opening file for writing...")
 		with open(fileOutputPath, "w") as f:
 			logger.info("File opened for writing.")
 			logger.debug("Sorted combined name list: " + str(combinedNameList))
+			logger.debug("Writing file header...")
 			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writeheader()
-
+			logger.info("Writing to file...")
 			# Get and write the event dictionary for each event from the combined list in sequence. 
 			# If available, get the online event. Otherwise, get the locally stored event.
 			for name in combinedNameList:
@@ -95,10 +98,11 @@ def update(fileOutputPath, newDict, fieldnames, delimiter=","):
 					eventDict = None
 				logger.debug("Writing event dictionary: " + str(eventDict))
 				writer.writerow(eventDict)
+		logger.info("File written.")
 	logger.info("-------------------------------------------------------------------------------------")
 
 def main():
 	pass
 
 if __name__ == "__main__":
-	main()	
+	main()
