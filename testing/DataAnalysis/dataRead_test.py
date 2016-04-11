@@ -12,7 +12,7 @@ YEAR = "2016"
 SURVEY = "MOA"
 DATA_DIR = os.path.join(os.path.join(DATA_PARENT_DIR, YEAR), SURVEY)
 MINIMUM_SLOPE = 10
-EVENT_NAME= "2016-BLG-053"
+EVENT_NAME= "2016-BLG-160"
 
 if EVENT_NAME == "2016-BLG-027":
 	unknown_file = "2016-BLG-027"
@@ -38,6 +38,15 @@ elif EVENT_NAME == "2016-BLG-053":
 	notes_file = "KB160053.notes"
 	t0 = 7448.64
 
+elif EVENT_NAME == "2016-BLG-160":
+	print "160!"
+	unknown_file = "2016-BLG-160"
+	xml_file = "2016-BLG-160-vot.xml"
+	dat_file = "KB160160.dat"
+	param_file = "KB160160.param"
+	notes_file = "KB160160.notes"
+	t0 = 7511.31
+
 else:
 	unknown_file = "2016-BLG-027"
 	xml_file = "2016-BLG-027-vot.xml"
@@ -46,8 +55,10 @@ else:
 	notes_file = "KB160027.notes"
 	t0 = 7426.16
 
-time_lower_bound = t0 - 30
-time_upper_bound = t0 + 30
+#current_time = datetime.utcnow()
+
+time_lower_bound = t0 - 100
+time_upper_bound = t0
 mag_lower_bound = 14
 mag_upper_bound = 20
 gradient_lower_bound = -100
@@ -102,7 +113,9 @@ def test1():
 		mag_errs = []
 
 		for i in xrange(len(times_all)):
-			#print times_all[i]
+			#print "Time: " + str(times_all[i])
+			#print "Lower bound: " + str(time_lower_bound)
+			#print "Upper bound: " + str(time_upper_bound)
 			if times_all[i] < time_lower_bound:
 				continue
 			elif times_all[i] > time_upper_bound:
@@ -152,6 +165,8 @@ def test1():
 		plt.show()
 
 def getMinAndMaxSlope(times, mags, interval=float("inf")):
+	#print "Times: " + str(times)
+	#print "Mags: " + str(mags)
 	gradients, times_output = calc_lc_gradient(times, mags, interval)
 	minimum_gradient = gradients.min()
 	minimum_index = gradients.argmin() * 2
@@ -192,12 +207,15 @@ def getMinAndMaxSlope(times, mags, interval=float("inf")):
 		   maximum_time, maximum_time2, maximum_mag, maximum_mag2, maximum_gradient
 
 def calc_lc_gradient( times, mags, interval = float("inf")):
-
+	print "times: " + str(times)
+	print "mags: " + str(mags)
 	gradients = []
 	times_output = []
 	for i in range( 0, len( times )-2, 2 ):
 		#print "Interval:", interval
 		#print "Time difference:", (times[i+1] - times[i])
+		#print "Times 2 - Time 1: " + str(times[i+1] - times[i])
+		#print "Interval: " + str(interval)
 		if times[i+1] - times[i] < interval:
 			gradients.append( ( mags[i+1] - mags[i] ) / ( times[i+1] - times[i] ) )
 		times_output.append(times[i])
