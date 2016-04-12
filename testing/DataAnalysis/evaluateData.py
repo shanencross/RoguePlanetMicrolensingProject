@@ -124,9 +124,9 @@ def trimDataPoints(dataPoints, currentDay, daysAgo):
 	return newDataDicts
 		
 def readInData(dataFile):
-	#times = []
-	#mags = []		
-	#mag_errs = []
+	times = []
+	mags = []		
+	mag_errs = []
 	dataDicts = []
 	time_index = 2
 	mag_index = 0
@@ -146,13 +146,11 @@ def readInData(dataFile):
 		#print "Magnitude string:", mag
 		#print "Magnitude error string:", mag_err
 		
-		#times.append(float(time))
-		#mags.append(float(mag))
-		#mag_errs.append(float(mag_err))
-		dataDict = {"time": float(time), "mag": float(mag), "mag_errs": mag_errs}
-		dataDicts.append(dataDict)
-
-	return dataDicts
+		times.append(float(time))
+		mags.append(float(mag))
+		mag_errs.append(float(mag_err))
+	dataDict = {"times": times, "mags": mags, "mag_errs": mag_errs}
+	return dataDict
 
 def getEventSurvey(eventName):
 	if eventName[:3] == "MOA":

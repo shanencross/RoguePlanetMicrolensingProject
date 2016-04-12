@@ -71,6 +71,7 @@ def updateTable():
 		eventMag = eventLines[9].string
 		event_tE = eventLines[15].string
 		event_tE_err = eventLines[16].string
+		eventExposureTime = eventLines[6].string
 
 		# obtains both MOA and OGLE names if available with name-conversion function from collectEventData...
 		# But this should be done during generation of the comparison table between my output and Markus's TAP output, I think. 
@@ -92,7 +93,8 @@ def updateTable():
 		
 		# Store data as a dictionary of dictionaries. The inner dictionaries are the "events", containing items for each piece of data about the events.
 		# The outer dictionary uses event names as keys, each pointing to an event dictionary as a value.
-		eventDict = {"name_TAP": eventName_full, "priority_TAP": eventPriority, "mag_TAP": eventMag, "tE_TAP": event_tE, "tE_err_TAP": event_tE_err}
+		eventDict = {"name_TAP": eventName_full, "priority_TAP": eventPriority, "mag_TAP": eventMag, "tE_TAP": event_tE, "tE_err_TAP": event_tE_err, \
+					 "exposureTime_TAP": eventExposureTime}
 		onlineTAPevents[eventName_full] = eventDict
 		logger.debug("Obtained event dictionary: %s" % (str(eventDict)))
 	#print "Obtained online TAP table: %s" % (str(onlineTAPevents))
@@ -107,11 +109,11 @@ def printOnlineTable():
 
 def saveTable():
 	# Column field names for table
-	fieldnames = ["name_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP"]
+	fieldnames = ["name_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP", "exposureTime_TAP"]
 	delimiter = ","
 	logger.info("Update .csv file with events using updateCSV script...")
 	updateCSV.update(TAP_TARGET_TABLE_OUTPUT_FILEPATH, onlineTAPevents, fieldnames=fieldnames, delimiter=delimiter)
-
+	
 	"""
 	# if csv file does NOT yet exist, open it for writing, sort the online TAP events by name, and store each event dictionary
 	# as a row in this sequence

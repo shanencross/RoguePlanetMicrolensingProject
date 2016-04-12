@@ -30,7 +30,7 @@ import mailAlert # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
 
-DEBUGGING_MODE = False # Turn this flag on if modifying and testing code - turn it off when actively being used
+DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn it off when actively being used
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
@@ -88,7 +88,7 @@ MAX_EINSTEIN_TIME = 3 # days - only check events as short or shorter than this
 MIN_MAG = 17.5 # magnitude units - only check events as bright or brighter than this
 			   # (i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
-EINSTEIN_TIME_ERROR_ALERT_THRESHOLD = 5 # days - if Einstein Time error is less than this, email is labeled "Event Alert"; 
+EINSTEIN_TIME_ERROR_ALERT_THRESHOLD = 1 # days - if Einstein Time error is less than this, email is labeled "Event Alert"; 
 										# otherwise email is labeled "Event Warning"
 
 EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
@@ -506,7 +506,7 @@ def getAlertLevelAndMessage(values_MOA):
 		alertLevel = "Warning"
 		message += " greater than an error threshold of " + str(EINSTEIN_TIME_ERROR_ALERT_THRESHOLD)
 
-	message += " days, this email has been given the status of \"Event %s\"." % str(alertLevel)
+	message += " day(s), this email has been given the status of \"Event %s\"." % str(alertLevel)
 	alertDict = {"alert level": alertLevel, "message": message}
 	logger.info("Event alert level: Event " + str(alertDict["alert level"]))
 	
