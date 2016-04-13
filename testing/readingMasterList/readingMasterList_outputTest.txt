@@ -1,0 +1,229 @@
+Newest OGLE number: 600
+Newest OGLE year: 2016
+Newest MOA number: 158
+Newest MOA year: 2016
+619 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0619
+No MOA name
+-------------------------------------
+618 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0618
+No MOA name
+-------------------------------------
+615 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0615
+No MOA name
+-------------------------------------
+614 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0614
+No MOA name
+-------------------------------------
+617 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0617
+No MOA name
+-------------------------------------
+616 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0616
+No MOA name
+-------------------------------------
+611 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0611
+No MOA name
+-------------------------------------
+610 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0610
+No MOA name
+-------------------------------------
+613 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0613
+No MOA name
+-------------------------------------
+159 > 158
+2016 > 2016
+Match found!
+Event: MOA-2016-BLG-159
+No OGLE name
+-------------------------------------
+634 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0634
+No MOA name
+-------------------------------------
+633 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0633
+No MOA name
+-------------------------------------
+632 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0632
+No MOA name
+-------------------------------------
+631 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0631
+No MOA name
+-------------------------------------
+630 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0630
+No MOA name
+-------------------------------------
+608 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0608
+No MOA name
+-------------------------------------
+609 > 600
+2016 > 2016
+164 > 158
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0609
+Match found!
+Event: MOA-2016-BLG-164
+Both MOA and OGLE names found!
+-------------------------------------
+606 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0606
+No MOA name
+-------------------------------------
+607 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0607
+No MOA name
+-------------------------------------
+604 > 600
+2016 > 2016
+166 > 158
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0604
+Match found!
+Event: MOA-2016-BLG-166
+Both MOA and OGLE names found!
+-------------------------------------
+605 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0605
+No MOA name
+-------------------------------------
+602 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0602
+No MOA name
+-------------------------------------
+603 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0603
+No MOA name
+-------------------------------------
+601 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0601
+No MOA name
+-------------------------------------
+160 > 158
+2016 > 2016
+Match found!
+Event: MOA-2016-BLG-160
+No OGLE name
+-------------------------------------
+620 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0620
+No MOA name
+-------------------------------------
+621 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0621
+No MOA name
+-------------------------------------
+622 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0622
+No MOA name
+-------------------------------------
+623 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0623
+No MOA name
+-------------------------------------
+624 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0624
+No MOA name
+-------------------------------------
+625 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0625
+No MOA name
+-------------------------------------
+628 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0628
+No MOA name
+-------------------------------------
+629 > 600
+2016 > 2016
+Match found!
+Event: OGLE-2016-BLG-0629
+No MOA name
+-------------------------------------
+161 > 158
+2016 > 2016
+Match found!
+Event: MOA-2016-BLG-161
+No OGLE name
+-------------------------------------
+165 > 158
+2016 > 2016
+Match found!
+Event: MOA-2016-BLG-165
+No OGLE name
+-------------------------------------
+163 > 158
+2016 > 2016
+Match found!
+Event: MOA-2016-BLG-163
+No OGLE name
+-------------------------------------
+Completed checking file.
