@@ -2,8 +2,8 @@
 logger_setup.py
 IN-PROGRESS WORKING COPY
 Purpose: Set up logger for webpageAccess.py and buildEventSummary.py
-Author: Shanen Cross
-Date: 2017-03-08
+@author: Shanen Cross
+Date: 2016-04-14
 """
 import sys
 import os

@@ -1,6 +1,6 @@
 """
 comparison_table_page_output.py
-Author: Shanen Cross
+@author: Shanen Cross
 Purpose: Given list of combined ROGUE/TAP dictionaries from compareEventTables.py, ouput comparison table HTML page. 
 """
 import sys
@@ -18,7 +18,7 @@ logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 TEST_EVENT_LIST = [{"name_MOA":"MOA-2015-BLG-123", "ID_MOA":"gb19-R-2-7179", "ROGUE trigger":"yes", "TAP trigger":"no"}, \
 				   {"name_OGLE":"OGLE-2015-BLG-0123", "ROGUE trigger":"yes", "TAP trigger":"yes"}, \
 				   {"name_OGLE":"OGLE-2016-BLG-0224", "ROGUE trigger":"no", "TAP trigger":"yes"}]
-TEST_COMPARISON_PAGE_FILEPATH = "tableOutput_test.html"
+TEST_COMPARISON_PAGE_FILEPATH = "table_output_test.html"
 
 """
 ROGUE fieldnames: ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
@@ -42,27 +42,27 @@ COMBINED_FIELDNAMES = ["name_MOA", "name_OGLE", "RA_MOA", "Dec_MOA", "ROGUE trig
 					   "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", \
 					   "mag_err_MOA"] 
 
-def output_comparison_page(eventList, comparisonPageFilepath):
+def output_comparison_page(event_list, comparison_page_filepath):
 	logger.info("------------------------------------------------------------------------------")
 	"""Given sorted list of events and output path, print comparison table to file."""
 
-	with open(comparisonPageFilepath, "w") as my_file:
+	with open(comparison_page_filepath, "w") as my_file:
 		print_page_start(my_file)
-		printEventList(eventList, my_file)
+		print_event_list(event_list, my_file)
 		print_page_end(my_file)
 
 	logger.info("------------------------------------------------------------------------------")
 
-def printEventList(eventList, my_file):
+def print_event_list(event_list, my_file):
 	"""Print row for each event within table."""
 	logger.debug("Outputting list of events to page...")
-	logger.debug("List:\n" + str(eventList))
-	for event in eventList:
+	logger.debug("List:\n" + str(event_list))
+	for event in event_list:
 		print >> my_file, """<TR>"""
-		printEvent(event, my_file)
+		print_event(event, my_file)
 		print >> my_file, """</TR>"""
 
-def printEvent(event, my_file):
+def print_event(event, my_file):
 	"""Print row for an individual event."""
 
 	logger.debug("Printing event...")
@@ -171,12 +171,12 @@ def print_page_end(my_file):
 	logger.debug("Outputting end of page...")
 	print >> my_file, """</TABLE>"""
 
-def outputTest():
+def output_test():
 	"""Output a test comparison page using hardcoded event list and test output filepath."""
 	output_comparison_page(TEST_EVENT_LIST, TEST_COMPARISON_PAGE_FILEPATH)
 
 def main():
-	outputTest()
+	output_test()
 
 if __name__ == "__main__":
 	main()

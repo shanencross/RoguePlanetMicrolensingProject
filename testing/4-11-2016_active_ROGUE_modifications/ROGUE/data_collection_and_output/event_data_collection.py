@@ -25,7 +25,11 @@ DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn i
 LOG_DIR = os.path.join(sys.path[0], "logs/event_data_collection_log")
 LOG_NAME = "event_data_collection_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
-logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
+if DEBUGGING_MODE:
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=True, console_output_level = "DEBUG")
+else:
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
+
 
 MAX_MAG_ERR = 0.7
 
@@ -90,8 +94,8 @@ def collect_data(event_page_soup, values_MOA, simulate=True):
 
 	#update the current MOA values with the remaining ones that still need to be pulled from the webpage 
 	#(the errors, remarks, and lightcurve URL)
-	remainingValues_MOA = get_remaining_values_MOA(event_page_soup, values_MOA["ID"])
-	values_MOA.update(remainingValues_MOA)
+	remaining_values_MOA = get_remaining_values_MOA(event_page_soup, values_MOA["ID"])
+	values_MOA.update(remaining_values_MOA)
 	logger.debug("MOA values: " + str(values_MOA))
 	name_OGLE = convert_event_name(values_MOA["name"], MOA_to_OGLE=True)
 	if name_OGLE is not None:
@@ -114,7 +118,7 @@ def collect_data(event_page_soup, values_MOA, simulate=True):
 
 	return output_dict
 
-def buildSummary(values_dict):
+def build_summary(values_dict):
 	output_string = build_output_string(values_dict)
 	logger.info("Output:\n" + output_string)
 	

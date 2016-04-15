@@ -7,7 +7,7 @@ import sys
 import os
 import logger
 
-import loggerSetup
+import logger_setup
 import ROGUE
 
 DEBUGGING_MODE = True
@@ -18,9 +18,9 @@ LOG_DIR = os.path.join(sys.path[0], "logs/reading_master_list_log")
 LOG_NAME = "reading_master_list_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
-	logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=True, consoleOutputLevel = "DEBUG")
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=True, consoleOutputLevel = "DEBUG")
 else:
-	logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=False, consoleOutputLevel = "DEBUG")
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=False, consoleOutputLevel = "DEBUG")
 
 NUM_START_INDEX_OGLE = 14
 YEAR_START_INDEX_OGLE = 5

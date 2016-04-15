@@ -9,19 +9,24 @@ import logging
 
 import comparison_table_page_output
 from data_collection_and_output import event_data_collection #TEMP - WON'T WORK - HOW TO IMPORT FROM SUBDIR OF PARENT DIR?
-import loggerSetup
+import logger_setup
 
-LOG_DIR = os.path.join(sys.path[0], "logs/eventTablesComparisonLog")
-LOG_NAME = "eventTablesComparisonLog"
+DEBUGGING_MODE = True
+
+LOG_DIR = os.path.join(sys.path[0], "logs/event_tables_comparison_log")
+LOG_NAME = "event_tables_comparison_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
-logger = loggerSetup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
+if DEBUGGING_MODE:
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=True, console_output_level = "DEBUG")
+else:
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
 
 TEST_ROGUE_FILEPATH = ""
 
-TEST_TAP_DIR = os.path.join(sys.path[0], "TAP/TAPtargetTable/")
+TEST_TAP_DIR = os.path.join(sys.path[0], "TAP/TAP_target_table/")
 TEST_TAP_FILENAME = "TAP_target_table.csv"
 TEST_TAP_FILEPATH = os.path.join(TEST_TAP_DIR, TEST_TAP_FILENAME)
-TEST_COMPARISON_PAGE_FILEPATH = "comparisonTablePage_test.html"
+TEST_COMPARISON_PAGE_FILEPATH = "comparison_table_page_test.html"
 
 def read_ROGUE_table(ROGUE_filepath):
 	delimiter = ","
