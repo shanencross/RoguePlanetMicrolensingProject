@@ -158,7 +158,7 @@ def get_local_events(filepath):
 
 	return events_dict
 
-def evaluate_event(event_name_dict):
+def evaluate_event(event):
 	"""Evaluate whether event is short enough to potentially indicate a rogue planet
 	and whether it is bright enough to be worth further observation.
 	"""
@@ -166,25 +166,49 @@ def evaluate_event(event_name_dict):
 	logger.info("Event Evaluation:")
 
 	# place relevant values from event row in MOA table into dictionary as strings for ease of access
-	values_MOA = get_values_MOA(event_name_MOA)
-	values_OGLE = get_values_OGLE(event_name_OGLE)
-	values_ARTEMIS_MOA = get_values_ARTEMIS_MOA(event_name_MOA)
-	values_ARTEMIS_OGLE = get_values_ARTEMIS_OGLE(event_name_MOA)
+	try:
+		updated_event = event_data_collection.collect_data(event)
+	except Exception as ex:
+		logger.warning("Exception collecting data from survey site(s) and/or ARTEMIS")
+		logger.warning(ex)
+		return
 
+
+	"""
+	Source checks listed in order of priority. Rearrange statements to change priority.
+	For example, if OGLE is at the top of the if/elif chain, 
+	and the event has both OGLE and MOA values available,
+	then the OGLE values will be used to evaluate whether to trigger
+	"""
+	if updated_event.has_key("name_OGLE"):
+		source = "OGLE"
+	elif updated_event.has_key("name_ARTEMIS_OGLE"):
+		source = "ARTEMIS_OGLE"
+	elif updated_event.has_key("name_ARTEMIS_MOA"):
+		source = "ARTEMIS_MOA"
+	elif updated_event.has_key("name_MOA"):
+		source = "MOA"
+
+	evaluate_event_data(updated_event, source=source)
 	# evaluate Einstein time, microlensing vs. cv status, and magnitude
 	# for whether to trigger observation
-	evaluateEventPage_MOA(values_MOA)
+	#evaluate_event_page_MOA(values_MOA)
 
-def evaluateEventPage_MOA(values_MOA):
-	"""Evaluate event using information from the MOA event page."""
+def evaluate_event_data(event, source="OGLE"):
+	"""Evaluate event using information from the survey event page or ARTEMIS file."""
 
-	# Acquire soup of event page using MOA ID, and add event page URL to value dictionary
-	eventPage_soup = get_event_page_soup_MOA(values_MOA)
+	tE_key = "tE_" + source
+	tE_err_key = "tE_err_" + source
 
-	# Get Einstein Time error from event page and add to values
-	einstein_time_err = get_einstein_time_err_MOA(event_page_soup)
-	values_MOA["tE_err"] = einstein_time_err
+	tE = event[tE_key]
+	tE_err = event[tE_err_key]
 
+	if check_einstein_time(tE, tE_err):
+		event_trigger(event)
+	else:
+		logger.info("Einstein time failed: lower bound must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
+
+	"""
 	# Check if event passes Einstein Time test
 	if check_einstein_time(values_MOA["tE"], values_MOA["tE_err"]):
 		# Check if event passes K2 microlensing region test
@@ -195,6 +219,7 @@ def evaluateEventPage_MOA(values_MOA):
 	# fail to trigger if Einstein Time lower bound (Einstein time - Einstein time error) exceeds max Einstein Time threshold
 	else:
 		logger.info("Einstein time failed: lower bound must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
+	"""
 
 def evaluate_assessment_and_mag_MOA(event_page_soup, values_MOA):
 	# Parse page soup for microlensing assessment of event
@@ -203,13 +228,13 @@ def evaluate_assessment_and_mag_MOA(event_page_soup, values_MOA):
 
 	if is_microlensing(assessment):
 		# parse page soup for magnitude and error of most recent observation of event
-		mag_values = get_mag(event_page_soup)
+		mag_values = event_data_collection.get_mag(event_page_soup)
 		values_MOA["mag"] = mag_values[0]
 		values_MOA["mag_err"] = mag_values[1]
 
 		# trigger if magnitude matches critera along with the preceding checks
 		if check_mag(mag_values):
-			event_trigger(event_page_soup, values_MOA)
+			trigger_event(event_page_soup, values_MOA)
 
 		# fail to trigger if mag and/or mag error values are unacceptable
 		else:
@@ -219,42 +244,33 @@ def evaluate_assessment_and_mag_MOA(event_page_soup, values_MOA):
 	else:
 		logger.info("Assessment failed: Not assessed as microlensing")
 
-def event_trigger(event_page_soup, values_MOA):
+def trigger_event(event):
 	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
 
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_ALERTS_ON:
 		logger.info("Mailing event alert...")
 		try:
-			send_mail_alert(values_MOA)
+			send_mail_alert(event)
 		except Exception as ex:
 			logger.warning("Exception attempting to mail event alert")
 			logger.warning(ex)
 
-	if SUMMARY_BUILDER_ON or EVENT_TRIGGER_RECORD_ON:
-		logger.info("Collecting further data from survey site(s) and ARTEMIS if available...")
+	if SUMMARY_BUILDER_ON:
+		logger.info("Building and outputting event summary page...")
 		try:
-			data_dict = event_data_collection.collect_data(event_page_soup, values_MOA, simulate=True)
+			event_data_collection.build_summary(data_dict)
 		except Exception as ex:
-			logger.warning("Exception collecting data from survey site(s) and/or ARTEMIS")
+			logger.warning("Exception building/outputting event summary")
 			logger.warning(ex)
-			return
 
-		if SUMMARY_BUILDER_ON:
-			logger.info("Building and outputting event summary page...")
-			try:
-				event_data_collection.build_summary(data_dict)
-			except Exception as ex:
-				logger.warning("Exception building/outputting event summary")
-				logger.warning(ex)
-
-		if EVENT_TRIGGER_RECORD_ON:
-			logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later..")
-			try:
-				add_event_to_trigger_dict(data_dict)
-			except Exception as ex:
-				logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
-				logger.warning(ex)
+	if EVENT_TRIGGER_RECORD_ON:
+		logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later..")
+		try:
+			add_event_to_trigger_dict(data_dict)
+		except Exception as ex:
+			logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
+			logger.warning(ex)
 
 def check_einstein_time(tE_string, tE_err_string=None):
 	"""Check if Einstein time is short enough for observation."""
@@ -265,11 +281,13 @@ def check_einstein_time(tE_string, tE_err_string=None):
 		einstein_time_err = float(tE_err_string)
 		logger.info("Einstein Time Error: " + str(einstein_time_err) + " days")
 
-		einsteinTime_lower_bound = einstein_time - einstein_time_err
-		logger.info("Einstein Time Lower Bound = %s - %s = %s days" % (str(einstein_time), str(einstein_time_err), str(einstein_time_lower_bound)))
+		einstein_time_lower_bound = einstein_time - einstein_time_err
+		logger.info("Einstein Time Lower Bound = %s - %s = %s days" % (str(einstein_time), str(einstein_time_err), \
+																	   str(einstein_time_lower_bound)))
 
 	else:
-		logger.info("No error given for Einstein time. Using given Einstein Time value as lower bound for comparison with max Einstein Time threshold.")
+		logger.info("No error given for Einstein time. Using given Einstein Time value as lower bound " + \
+					"for comparison with max Einstein Time threshold.")
 		einstein_time_lower_bound = einstein_time
 		logger.info("Einstein Time Lower Bound = %s days" % str(einstein_time_lower_bound))
 
@@ -303,13 +321,6 @@ def get_event_page_soup_MOA(values_MOA):
 	event_page_soup = BeautifulSoup(requests.get(event_page_URL, verify=False).content, 'lxml')
 	return event_page_soup
 
-def get_microlensing_assessment(event_page_soup):
-	"""Get assessment of whether an event is microlensing. Could be microlensing, cv, microlensing/cv, 
-	or possibly something else.
-	"""
-	assessment = event_page_soup.find(string="Current assessment:").next_element.string
-	return assessment
-
 def is_microlensing(assessment):
 	"""Check if event is microlensing, cv, a combination of the two, or unknown -
     Should this return true or false if event is "microlensing/cv" (currently returns true)?
@@ -319,42 +330,6 @@ def is_microlensing(assessment):
 		return True
 	else:
 		return False
-
-def get_mag(event_page_soup):
-	"""Return magnitude and error of last photometry measurement whose error is not too large -
-	if all found values are too large, returns false boolean as well.
-	"""
-	# Each magnitude is word 0 of string in table 3, row i, column 1 (zero-based numbering),
-	# where i ranges from 2 through len(rows)-1 (inclusive).
-	# Each error is word 1 of the same string.
-	mag_table = event_page_soup.find_all("table")[3]
-	rows = mag_table.find_all('tr')
-
-	# Iterate backwards over magnitudes starting from the most recent,
-	# skipping over ones with too large errors
-	for i in xrange(len(rows)-1, 1, -1):
-		mag_string_split = rows[i].find_all('td')[1].string.split()
-		mag = float(mag_string_split[0])
-		mag_err = float(mag_string_split[2])
-		logger.debug("Current magnitude: " + str(mag))
-		logger.debug("Current magnitude error: " + str(mag_err))
-		# Check if error exceeds max error allowed, and break out of loop if not.
-		if (mag_err <= MAX_MAG_ERR):
-			mag_err_too_large = False
-			logger.debug("Magnitude error is NOT too large")
-			break
-		else:
-			mag_err_too_large = True
-			logger.debug("Current magnitude error is too large")
-	# If magnitude error is still too large after loop ends (without a break),
-	# mag_err_too_large will be True.
-
-	# if no magnitude rows were found in table, magnitude list is null
-	if len(rows) > 2:
-		mag_values = (mag, mag_err, mag_err_too_large)
-	else:
-		mag_values = None
-	return mag_values
 
 def check_mag(mag_values):
 	"""Check if magnitude is bright enough for observation."""

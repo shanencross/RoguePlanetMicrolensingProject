@@ -37,7 +37,8 @@ MAX_MAG_ERR = 0.7
 #in case it has been given an event from a year different year
 CURRENT_YEAR = str(datetime.utcnow().year)
 #CURRENT_YEAR = "2015" #JUST FOR TESTING/DEBUGGING - REMOVE
-event_year = CURRENT_YEAR
+event_year_OGLE = CURRENT_YEAR
+event_year_MOA = CURRENT_YEAR
 
 #MOA and OGLE directories set to current year by defaultr; 
 #buildPage() changes these if passed event from different year
@@ -83,155 +84,77 @@ EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRI
 if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
 	os.makedirs(EVENT_TRIGGER_RECORD_DIR)
 """
+SURVEY_DATA_DIR = "/science/robonet/rob/Operations/SurveyData/"
+MOA_DATA_FILEPATH = os.path.join(SURVEY_DATA_DIR, "MOA/moa_lenses.par")
+OGLE_data_filepath = os.path.join(SURVEY_DATA_DIR, ("OGLE/lenses.par." + event_year_OGLE))
 
-#values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks, RA, Dec
-#values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurve_zoomed, remarks
-def collect_data(event_page_soup, values_MOA, simulate=True):
+def collect_data(event):
+	#values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks, RA, Dec
+	#values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurve_zoomed, remarks
 	logger.info("--------------------------------------------")
+	updated_event = {}
+	event_year_OGLE = ""
+	event_year_MOA = ""
+	if event.has_key("name_OGLE"):
+		name_OGLE = event["name_OGLE"
+		event_year_OGLE = name_OGLE[5:9]
 
-	#set year to that of MOA event, for accessing URLs, and update MOA/OGLE URl directories
-	update_year(values_MOA["name"].split("-")[0])
+		updated_event.update(collect_data_OGLE(name_OGLE))
+		updated_event.update(collect_data_ARTEMIS(name_OGLE)
 
-	#update the current MOA values with the remaining ones that still need to be pulled from the webpage 
-	#(the errors, remarks, and lightcurve URL)
-	remaining_values_MOA = get_remaining_values_MOA(event_page_soup, values_MOA["ID"])
-	values_MOA.update(remaining_values_MOA)
-	logger.debug("MOA values: " + str(values_MOA))
-	name_OGLE = convert_event_name(values_MOA["name"], MOA_to_OGLE=True)
-	if name_OGLE is not None:
-		values_OGLE = get_values_OGLE(name_OGLE)
-		values_ARTEMIS_OGLE = get_values_ARTEMIS(name_OGLE, is_MOA=False)
-	else:
-		values_OGLE = None
-		values_ARTEMIS_OGLE = None
-	values_ARTEMIS_MOA = get_values_ARTEMIS(values_MOA["name"], is_MOA=True)
+	if event.has_key("name_MOA"):
+		name_MOA = event["name_MOA"]
+		event_year_MOA = name_MOA[4:8]
+		updated_event.update(collect_data_MOA(name_MOA))
+		updated_event.update(collect_data_ARTEMIS(name_MOA)
 
-	output_dict = {}
-	if values_MOA is not None:
-		output_dict["MOA"] = values_MOA
-	if values_OGLE is not None:
-		output_dict["OGLE"] = values_OGLE
-	if values_ARTEMIS_MOA is not None:
-		output_dict["ARTEMIS_MOA"] = values_ARTEMIS_MOA
-	if values_ARTEMIS_OGLE is not None:
-		output_dict["ARTEMIS_OGLE"] = values_ARTEMIS_OGLE
+	update_year(event_year_OGLE, event_year_MOA)
 
-	return output_dict
+	return updated_event
 
-def build_summary(values_dict):
-	output_string = build_output_string(values_dict)
+def build_summary(event):
+	output_string = build_output_string(event)
 	logger.info("Output:\n" + output_string)
 	
 	if not os.path.exists(SUMMARY_OUTPUT_DIR):
 		os.makedirs(SUMMARY_OUTPUT_DIR)
-	output_filename = values_dict["MOA"]["name"] + "_summary.html"
+
+	if event.has_key("name_OGLE"):
+		event_name = event["name_OGLE"]
+	elif event.has_key("name_MOA"):
+		event_name = event["name_MOA"]
+	else:
+		logger.warning("Event has no OGLE or MOA name. Cannot build event summary.")
+		logger.warning("Event dictionary: " + str(event))
+		return
+
+	output_filename = event_name + "_summary.html"
 	output_filepath = os.path.join(SUMMARY_OUTPUT_DIR, output_filename)
 	with open(output_filepath, 'w') as output_file:
 		output_file.write(output_string)
 	logger.info("--------------------------------------------")
 
-"""
-def outputTable(input_dict):
-	logger.info("Outputting table...")
-	new_dict = {}
-	
-	#name_MOA, pageURL_MOA, tMax_MOA, tMax_err_MOA, tE_MOA, tE_err_MOA, u0_MOA, u0_err_MOA, mag_MOA, mag_err_MOA, assessment, lCurve_MOA, remarks_MOA
-	#name_OGLE, pageURL_OGLE, tMax_OGLE, tMax_err_OGLE, tE_OGLE, tE_err_OGLE, u0_OGLE, u0_err_OGLE, mag_OGLE, mag_err_OGLE, lCurve_OGLE, lCurve_zoomed_OGLE, remarks_OGLE
-	#name_ARTEMIS_MOA, tMax_ARTEMIS_MOA, tMax_err_ARTEMIS_MOA, tE_ARTEMIS_MOA, tE_err_ARTEMIS_MOA, u0_ARTEMIS_MOA, u0_err_ARTEMIS_MOA
-	#name_ARTEMIS_OGLE, tMax_ARTEMIS_OGLE, tMax_err_ARTEMIS_OGLE, tE_ARTEMIS_OGLE, tE_err_ARTEMIS_OGLE, u0_ARTEMIS_OGLE, u0_err_ARTEMIS_OGLE
+#Update year and associated global URLs based on event years
+def update_year(new_year_OGLE, new_year_MOA):
+	if new_year_OGLE != "":
+		global event_year_OGLE
+		event_year_OGLE = new_year_OGLE
+		global OGLE_data_filepath
+		OGLE_data_filepath = os.path.join(SURVEY_DATA_DIR, ("OGLE/lenses.par." + event_year_OGLE))
 
+		#OGLE dir remains unchanged unless event year differs rom the current year
+		if event_year_OGLE != CURRENT_YEAR:
+			global OGLE_dir
+			OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/" + event_year
 
-	fieldnames = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
-				  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
-				  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
-	delimiter = ","
+	if new_year_MOA != "":
+		global event_year_MOA
+		event_year_MOA = new_year_MOA
+		global MOA_dir
+		MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + event_year_MOA
 
-	for fieldname in fieldnames:
-		if fieldname[-12:] == "_ARTEMIS_MOA" and input_dict.has_key("ARTEMIS_MOA"):
-			new_dict[fieldname] = input_dict["ARTEMIS_MOA"][fieldname[:-12]]
-
-		elif fieldname[-4:] == "_MOA" and input_dict.has_key("MOA"):
-			new_dict[fieldname] = input_dict["MOA"][fieldname[:-4]]
-
-		elif fieldname[-13:] == "_ARTEMIS_OGLE" and input_dict.has_key("ARTEMIS_OGLE"):
-			new_dict[fieldname] = input_dict["ARTEMIS_OGLE"][fieldname[:-13]]
-
-		elif fieldname[-5:] == "_OGLE" and input_dict.has_key("OGLE"):
-			new_dict[fieldname] = input_dict["OGLE"][fieldname[:-5]]
-
-	logger.info("New dictionary: " + str(new_dict))
-
-	update_CSV.update(EVENT_TRIGGER_RECORD_FILEPATH, new_dict, fieldnames=fieldnames, delimiter=delimiter)
-
-	if os.path.isfile(EVENT_TRIGGER_RECORD_FILEPATH):
-		with open(EVENT_TRIGGER_RECORD_FILEPATH, "a") as f:
-			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
-			writer.writerow(new_dict)
-	else:
-		with open(EVENT_TRIGGER_RECORD_FILEPATH, "w") as f:
-			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
-			writer.writeheader()
-			writer.writerow(new_dict)
-"""
-
-#Update year and associated global URLs
-def update_year(new_year):
-	global event_year
-	event_year = new_year
-
-	global MOA_dir
-	MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + event_year
-
-	#OGLE dir remains unchanged unless event year differs rom the current year
-	if event_year != CURRENT_YEAR:
-		global OGLE_dir
-		OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/" + event_year
-
-#currently return dict of tMax err, tE err, u0 err, remarks, and lCurve URL, given soup and ID --
-#Perhaps later, should be updated to return dict of all missing entries,
-#given a partially full MOA values dict?
-def get_remaining_values_MOA(event_page_soup, ID):
-	micro_table = event_page_soup.find(id="micro").find_all('tr')
-	tMax_JD_err = float(micro_table[0].find_all('td')[4].string.split()[0])
-	tE_err = float(micro_table[1].find_all('td')[4].string.split()[0])
-	u0_err = float(micro_table[2].find_all('td')[4].string)
-	remarks = str(event_page_soup.find_all("table")[1].find("td").string)
-	lCurve_plot_URL = MOA_dir + "/datab/plot-" + ID + ".png"
-	update_values = {"tMax_err": tMax_JD_err, "tE_err": tE_err, "u0_err": u0_err, "lCurve": lCurve_plot_URL, "remarks": remarks}
-	logger.debug("Updated values: " + str(update_values))
-	return update_values
-
-def convert_event_name(event_name, MOA_to_OGLE=True):
-	cross_reference_URL = MOA_dir + "/moa2ogle.txt"
-	cross_reference_request = requests.get(cross_reference_URL, verify=False)
-	cross_reference = cross_reference_request.content.splitlines()
-	if MOA_to_OGLE:
-		initial_survey = "MOA"
-		final_survey = "OGLE"
-	else:
-		initial_survey = "OGLE"
-		final_survey = "MOA"
-
-	event_name_initial = initial_survey + "-" + event_name
-	event_name_final = ""
-	for line in reversed(cross_reference):
-		if line[0] != "#":
-			line_split = line.split()
-			if line_split[0] == event_name_initial:
-				event_name_final = line_split[2]
-				break
-			if line_split[2] == event_name_initial:
-				event_name_final = line_split[0]
-				break
-	if event_name_final == "":
-		return None
-	else:
-		event_name_output = event_name_final[(len(final_survey) + 1):]
-		logger.debug(initial_survey + " to " + final_survey + " converted name: " + str(event_name_final))
-		return event_name_output
-
-def get_values_OGLE(event_name):
-	name_URL = event_name[5:].lower()
+def collect_data_OGLE(event_name):
+	name_URL = event_name[10:].lower()
 	event_URL = OGLE_dir + "/" + name_URL + ".html"
 	request = requests.get(event_URL, verify=False)
 	page = request.content
@@ -246,24 +169,24 @@ def get_values_OGLE(event_name):
 		remarks = "None"
 
 	param_table = tables[2]
-	paramRows = param_table.find_all('tr')
+	param_rows = param_table.find_all('tr')
 
-	tMax_columns = paramRows[0].find_all('td')
-	tau_columns = paramRows[1].find_all('td')
-	u0_columns = paramRows[2].find_all('td')
+	tMax_columns = param_rows[0].find_all('td')
+	tau_columns = param_rows[1].find_all('td')
+	u0_columns = param_rows[2].find_all('td')
 
 	tMax_values = parse_values_OGLE(tMax_columns)
 	tau_values = parse_values_OGLE(tau_columns)
 	u0_values = parse_values_OGLE(u0_columns)
 
 	lCurve_plot_URL = OGLE_dir + "/data/" + event_year + "/" + name_URL + "/lcurve.gif"
-	lCurvePlotZoomedURL = OGLE_dir + "/data/" + event_year + "/" + name_URL + "/lcurve_s.gif"
+	lCurve_plot_zoomed_URL = OGLE_dir + "/data/" + event_year + "/" + name_URL + "/lcurve_s.gif"
 
-	values = {"name": event_name, "pageURL": event_URL, "remarks": remarks, \
-								 "tMax": tMax_values[0], "tMax_err": tMax_values[1], \
-								 "tE": tau_values[0], "tE_err": tau_values[1], \
-								 "u0": u0_values[0], "u0_err": u0_values[1], \
-								 "lCurve": lCurve_plot_URL, "lCurve_zoomed": lCurvePlotZoomedURL}
+	values = {"name_OGLE": event_name, "pageURL_OGLE": event_URL, "remarks_OGLE": remarks, \
+								 "tMax_OGLE": tMax_values[0], "tMax_err_OGLE": tMax_values[1], \
+								 "tE_OGLE": tau_values[0], "tE_err_OGLE": tau_values[1], \
+								 "u0_OGLE": u0_values[0], "u0_err_OGLE": u0_values[1], \
+								 "lCurve_OGLE": lCurve_plot_URL, "lCurve_zoomed_OGLE": lCurve_plot_zoomed_URL}
 
 	logger.debug("OGLE values: " + str(values))
 	return values
@@ -271,14 +194,35 @@ def get_values_OGLE(event_name):
 def parse_values_OGLE(columns):
 	val = float(columns[1].string.split()[0])
 	val_Err = float(columns[3].string.split()[0])
-	return (val, val_Err)
+	return (val, val_Err)	
 
-def get_values_MOA(ID):
+def collect_data_MOA(event_name):
+	ID = get_ID_MOA(event_name)
+	if ID == "":
+		logger.warning("Cannot not find MOA ID. Cannot collect MOA data from webpage or local file.")
+		return {}
+	collect_data_MOA_via_ID(ID)
+
+def get_ID_MOA(event_name):
+	with open(MOA_DATA_FILEPATH, "r") as MOA_file:
+		ID_MOA = ""
+		for line in MOA_file.read():
+			line_split = line.split()
+			line_event_name = line_split[0]
+			
+			if line_event_name == event_name:
+				ID_MOA = line.split()[1]	
+
+		if ID_MOA == "":
+			logger.warning("MOA event %s not found in parameter file (located in %s)." % (event_name, MOA_DATA_FILEPATH))
+			logger.warning("Returning MOA ID as empty string.")
+		return ID_MOA	
+
+def collect_data_MOA_via_ID(ID):
 	name_URL = MOA_dir + "/display.php?id=" + ID
 	request = requests.get(name_URL, verify=False)
 	page = request.content
 	soup = BeautifulSoup(page, 'lxml')
-	event_name = str(soup.find("title").string.split()[1])
 	micro_table = soup.find(id="micro").find_all('tr')
 
 	tMax_line = micro_table[0].find_all('td')
@@ -298,7 +242,7 @@ def get_values_MOA(ID):
 	u0_err = float(u0_line[4].string)
 	u0_values = (u0, u0_err)
 
-	mag_values = getMag_MOA(soup)
+	mag_values = get_mag_MOA(soup)
 	if mag_values is not None:
 		mag = mag_values[0]
 		mag_err = mag_values[1]
@@ -307,17 +251,17 @@ def get_values_MOA(ID):
 	remarks = str(soup.find_all("table")[1].find("td").string)
 
 	lCurve_plot_URL = MOA_dir + "/datab/plot-" + ID + ".png"
-	values_MOA = {"name": event_name, "pageURL": name_URL, 
-				  "tMax": tMax_JD_values[0], "tMax_err": tMax_JD_values[1], \
-				  "tE": tE_values[0], "tE_err": tE_values[1], \
-				  "u0": u0_values[0], "u0_err": u0_values[1], \
-				  "mag": mag_values[0], "mag_err": mag_values[1], 
-				  "lCurve": lCurve_plot_URL, "assessment": assessment, "remarks": remarks}
+	values_MOA = {"name_MOA": event_name, "pageURL_MOA": name_URL, 
+				  "tMax_MOA": tMax_JD_values[0], "tMax_err_MOA": tMax_JD_values[1], \
+				  "tE_MOA": tE_values[0], "tE_err_MOA": tE_values[1], \
+				  "u0_MOA": u0_values[0], "u0_err_MOA": u0_values[1], \
+				  "mag_MOA": mag_values[0], "mag_err_MOA": mag_values[1], 
+				  "lCurve_MOA": lCurve_plot_URL, "assessment_MOA": assessment, "remarks_MOA": remarks}
 
-	logger.info("MOA values: " + str(values_MOA))
+	logger.debug("MOA values: " + str(values_MOA))
 	return values_MOA	
 
-def getMag_MOA(event_page_soup):
+def get_mag_MOA(event_page_soup):
 	#Each magnitude is word 0 of string in table 3, row i, column 1 (zero-based numbering),
 	#where i ranges from 2 through len(rows)-1 (inclusive).
 	#Each error is word 1 of the same string.
@@ -330,8 +274,8 @@ def getMag_MOA(event_page_soup):
 		mag_string_split = rows[i].find_all('td')[1].string.split()
 		mag = float(mag_string_split[0])
 		mag_err = float(mag_string_split[2])
-		#print("Current magnitude: " + str(mag))
-		#print("Current magnitude error: " + str(mag_err))
+		logger.debug("Current magnitude: " + str(mag))
+		logger.debug("Current magnitude error: " + str(mag_err))
 		#Check if error exceeds max error allowed, and break out of loop if not.
 		if (mag_err <= MAX_MAG_ERR):
 			mag_err_too_large = False
@@ -339,7 +283,7 @@ def getMag_MOA(event_page_soup):
 			break
 		else:
 			mag_err_too_large = True
-			#print("Current magnitude error is too large")
+			logger.debug("Current magnitude error is too large")
 	#If magnitude error is still too large after loop ends (without a break),
 	#mag_err_too_large will be True.
 
@@ -348,16 +292,24 @@ def getMag_MOA(event_page_soup):
 		mag_values = (mag, mag_err, mag_err_too_large)
 	else:
 		mag_values = None
-
-	logger.debug("Mag values: " + str(mag_values))
 	return mag_values
 
-def get_values_ARTEMIS(event_name, is_MOA=True):
-	if is_MOA:
+def get_values_ARTEMIS(event_name):
+
+	survey_name = event_name.split("-")[0]	
+	
+	if survey_name == "MOA"
  		filename = "KB"
-	else: #is OGLE
+		event_name_short = event_name[4:]
+	elif survey_name == "OGLE":
 		filename = "OB"
-	filename += event_name[2:4] + "%04d" % int(event_name[9:])
+		event_name_short = event_name[5:]
+	else:
+		logger.warning("Event %s does not have OGLE or MOA survey prefix." % event_name)
+		logger.warning("Cannot collect ARTEMIS data.")
+		return {}
+
+	filename += event_name_short[2:4] + "%04d" % int(event_name_short[9:])
 	model_filepath = os.path.join(ARTEMIS_DIR, filename + ".model")
 	if not os.path.isfile(model_filepath):
 		return None
@@ -370,40 +322,24 @@ def get_values_ARTEMIS(event_name, is_MOA=True):
 	tE_err = float(entries[6])
 	u0 = float(entries[7]) 
 	u0_err = float(entries[8])
-	values = {"name": filename, "tMax": t0, "tMax_err": t0_err, "u0": u0, "u0_err": u0_err, "tE": tE, "tE_err": tE_err}
-	if is_MOA:
+	values = {("name_ARTEMIS_" + survey_name): filename, ("tMax_ARTEMIS_" + survey_name): t0, \
+			  ("tMax_err_ARTEMIS_" + survey_name): t0_err, ("u0_ARTEMIS_" + survey_name): u0, \
+			  ("u0_err_ARTEMIS_" + survey_name): u0_err, ("tE_ARTEMIS_" + survey_name): tE, \
+			  ("tE_err_ARTEMIS_" + survey_name): tE_err}
+
+	if survey_name == "MOA":
 		logger.info("ARTEMIS MOA values: " + str(values))
-	else: # is OGLE
+	elif survey_name == "OGLE":
 		logger.info("ARTEMIS OGLE values: " + str(values))
 	return values
 
 #values_MOA keywords: name, assessment, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, lCurve, RA, Dec
 #values_OGLE keywords: name, remarks, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurve_zoomed
 #values_ARTEMIS_MOA: name, tMax, tE, u0
-def build_output_string(values_dict):
-	if values_dict.has_key("MOA"):
-		values_MOA = values_dict["MOA"]
-	else:
-		values_MOA = None
-
-	if values_dict.has_key("OGLE"):
-		values_OGLE = values_dict["OGLE"]
-	else:
-		values_OGLE = None
-
-	if values_dict.has_key("ARTEMIS_MOA"):
-		values_ARTEMIS_MOA = values_dict["ARTEMIS_MOA"]
-	else:
-		values_ARTEMIS_MOA = None
-
-	if values_dict.has_key("ARTEMIS_OGLE"):
-		values_ARTEMIS_OGLE = values_dict["ARTEMIS_OGLE"]
-	else:
-		values_ARTEMIS_OGLE = None
-
+def build_output_string(event):
 	output_string = ""
 
-	if values_MOA is not None:
+	if event.has_key("name_MOA"):
 		output_string += \
 """MOA event: <br>
 Event: <a href=%s>%s</a> <br>
@@ -415,11 +351,11 @@ u0: %s +/- %s <br>
 Most recent magnitude: %s +/- %s <br>
 Light Curve: <br>
 <img src=%s width=500> \
-""" % (values_MOA["pageURL"], values_MOA["name"], values_MOA["assessment"], values_MOA["remarks"], values_MOA["tMax"], values_MOA["tMax_err"], \
-		values_MOA["tE"], values_MOA["tE_err"], values_MOA["u0"], values_MOA["u0_err"], values_MOA["mag"], values_MOA["mag_err"], \
-		values_MOA["lCurve"])
+""" % (event["pageURL_MOA"], event["name_MOA"], event["assessment_MOA"], event["remarks_MOA"], event["tMax_MOA"], \
+	   event["tMax_err_MOA"], event["tE_MOA"], event["tE_err_MOA"], event["u0_MOA"], event["u0_err_MOA"], \
+	   event["mag_MOA"], event["mag_err_MOA"], event["lCurve_MOA"])
 
-	if values_OGLE is not None:
+	if event.has_key("name_OGLE"):
 		output_string += \
 """\
 <br>
@@ -434,11 +370,11 @@ Light Curve: <br>
 <img src="%s" height=512 width=600> <br>
 Light Curve Zoomed: <br>
 <img src="%s" height=512 width=600> \
-""" % (values_OGLE["pageURL"], values_OGLE["name"], values_OGLE["remarks"], values_OGLE["tMax"], values_OGLE["tMax_err"], \
-		values_OGLE["tE"], values_OGLE["tE_err"], values_OGLE["u0"], values_OGLE["u0_err"], \
-		values_OGLE["lCurve"], values_OGLE["lCurve_zoomed"])
+""" % (event["pageURL_OGLE"], event["name_OGLE"], event["remarks_OGLE"], event["tMax_OGLE"], event["tMax_err_OGLE"], \
+		event["tE_OGLE"], event["tE_err_OGLE"], event["u0_OGLE"], event["u0_err_OGLE"], \
+		event["lCurve_OGLE"], event["lCurve_zoomed_OGLE"])
 
-	if values_ARTEMIS_MOA is not None:
+	if event.has_key("name_ARTEMIS_MOA"):
 		output_string += \
 """\
 <br>
@@ -448,11 +384,10 @@ Event: %s <br>
 tMax: %s +/- %s <br>
 tE: %s +/- %s <br>
 u0: %s +/-%s\
-""" % (values_ARTEMIS_MOA["name"], values_ARTEMIS_MOA["tMax"], values_ARTEMIS_MOA["tMax_err"], \
-									values_ARTEMIS_MOA["tE"], values_ARTEMIS_MOA["tE_err"], \
-									values_ARTEMIS_MOA["u0"], values_ARTEMIS_MOA["u0_err"])
+""" % (event["name_ARTEMIS_MOA"], event["tMax_ARTEMIS_MOA"], event["tMax_err_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], \
+	   event["tE_err_ARTEMIS_MOA"], event["u0_ARTEMIS_MOA"], event["u0_err_ARTEMIS_MOA"])
 
-	if values_ARTEMIS_OGLE is not None:
+	if event.has_key("name_ARTEMIS_OLGE"):
 		output_string += \
 """\
 <br>
@@ -462,10 +397,8 @@ Event: %s <br>
 tMax: %s +/- %s <br>
 tE: %s +/- %s <br>
 u0: %s +/-%s\
-""" % (values_ARTEMIS_OGLE["name"], values_ARTEMIS_OGLE["tMax"], values_ARTEMIS_OGLE["tMax_err"], \
-									values_ARTEMIS_OGLE["tE"], values_ARTEMIS_OGLE["tE_err"], \
-									values_ARTEMIS_OGLE["u0"], values_ARTEMIS_OGLE["u0_err"])
-
+""" % (event["name_ARTEMIS_OGLE"], event["tMax_ARTEMIS_OGLE"], event["tMax_err_ARTEMIS_OGLE"], event["tE_ARTEMIS_OGLE"], \
+	   event["tE_err_ARTEMIS_OGLE"], event["u0_ARTEMIS_OGLE"], event["u0_err_ARTEMIS_OGLE"])
 
 #For testing observation trigger button functionality
 #	output_string += \
@@ -476,63 +409,13 @@ u0: %s +/-%s\
 #<input type = "submit" value = "submit" />
 #</form>\
 #"""
-
 	return output_string
 
-def main():
-	test2()
-
 def test1():
-	#MOA 2015-BLG-501
-	#testID = "gb4-R-8-58133"
-	#update_year("2015")
-	#testID = "gb14-R-2-53554"	
-	testID = "gb19-R-7-5172"
-	values_MOA = get_values_MOA(testID)
-	name_OGLE = convert_event_name(values_MOA["name"], MOA_to_OGLE=True)
-	values_OGLE = get_values_OGLE(name_OGLE)
-	values_ARTEMIS_MOA = get_values_ARTEMIS(values_MOA["name"], is_MOA=True)
-	values_ARTEMIS_OGLE = get_values_ARTEMIS(name_OGLE, is_MOA=False)
-	output_string = build_output_string(values_MOA, values_OGLE, values_ARTEMIS_MOA, values_ARTEMIS_OGLE)
+	pass
 
-	"""
-	output_string += "MOA: <br>\n"
-	for key in values_MOA.iterkeys():
-		output_string += str(key) + ": " + str(values_MOA[key])
-		output_string += "<br>\n"
-	output_string += "<br>\n"
-	output_string += "OGLE: <br>\n"
-	for key in values_OGLE.iterkeys():
-		output_string += str(key) + ": " + str(values_OGLE[key])
-		output_string += "<br>\n"
-	"""
-
-	print output_string
-	with open(EVENT_FILEPATH, 'w') as outputTest:
-		outputTest.write(output_string)
-
-def test2():
-	testID = "gb19-R-7-5172"
-	update_year("2016")
-
-	values_MOA = get_values_MOA(testID)
-	values_MOA.update({"RA":str(274.573436176), "Dec":str(-25.739123955)})
-	name_OGLE = convert_event_name(values_MOA["name"], MOA_to_OGLE=True)
-	values_OGLE = get_values_OGLE(name_OGLE)
-	values_ARTEMIS_MOA = get_values_ARTEMIS(values_MOA["name"], is_MOA=True)
-	values_ARTEMIS_OGLE = get_values_ARTEMIS(name_OGLE, is_MOA=False)
-
-	output_dict = {}
-	if values_MOA is not None:
-		output_dict["MOA"] = values_MOA
-	if values_OGLE is not None:
-		output_dict["OGLE"] = values_OGLE
-	if values_ARTEMIS_MOA is not None:
-		output_dict["ARTEMIS_MOA"] = values_ARTEMIS_MOA
-	if values_ARTEMIS_OGLE is not None:
-		output_dict["ARTEMIS_OGLE"] = values_ARTEMIS_OGLE
-
-	outputTable(output_dict)
+def main():
+	test1()
 
 if __name__ == "__main__":
 	main()

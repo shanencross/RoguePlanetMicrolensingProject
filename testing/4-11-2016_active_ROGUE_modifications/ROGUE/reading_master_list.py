@@ -30,6 +30,18 @@ NUM_START_INDEX_MOA = 13
 YEAR_START_INDEX_MOA = 4
 YEAR_END_INDEX_MOA = YEAR_START_INDEX_MOA + 4
 
+def convert_string_to_boolean(string):
+	if string == "False" or string == "Unknown":
+		boolean = False
+	elif string == "True":
+		boolean = True
+	else:
+		boolean = False
+		logger.warning("Tried to convert supposed boolean string %s to boolean, but string was not True, False, or Unknown." % string)
+		logger.warning("Setting boolean to False by default.")
+
+	return boolean
+
 def check_event_master_list(local_events):
 
 	if local_events == None:
@@ -57,6 +69,9 @@ def check_event_master_list(local_events):
 				continue
 
 			lineSplit = line.split()
+			in_K2_footprint = convert_string_to_boolean(lineSplit[2])
+			in_K2_superstamp = convert_string_to_boolean(lineSplit[3])
+			during_K2_campaign = convert_string_to_boolean(lineSplit[4])
 			name_OGLE = lineSplit[5]
 			name_MOA = lineSplit[6]
 
@@ -88,8 +103,9 @@ def check_event_master_list(local_events):
 				logger.info("Event: %s" % name_MOA)
 				logger.info("Both MOA and OGLE names found!")
 
-				name_dict = {"name_OGLE": name_OGLE, "name_MOA": name_MOA}
-				ROGUE.evaluate_event(name_dict)			
+				event = {"name_OGLE": name_OGLE, "name_MOA": name_MOA, "in_K2_footprint": in_K2_footprint, \
+							  "in_K2_superstamp": in_K2_superstamp, "during_K2_campaign": during_K2_campaign}
+				ROGUE.evaluate_event(event)			
 				logger.info("-------------------------------------")
 			
 			if num_OGLE == None and year_OGLE == None \
@@ -101,8 +117,9 @@ def check_event_master_list(local_events):
 				logger.info("Event: %s" % name_MOA)
 				logger.info("No OGLE name")
 
-				name_dict = {"name_MOA": name_MOA}
-				ROGUE.evaluate_event(name_dict)
+				event = {"name_MOA": name_MOA, "in_K2_footprint": in_K2_footprint, \
+							  "in_K2_superstamp": in_K2_superstamp, "during_K2_campaign": during_K2_campaign}
+				ROGUE.evaluate_event(event)
 				logger.info("-------------------------------------")
 
 			elif num_MOA == None and year_MOA == None \
@@ -114,8 +131,9 @@ def check_event_master_list(local_events):
 				logger.info("New event found!")
 				logger.info("Event: %s" % name_OGLE)
 				logger.info("No MOA name")
-				name_dict = {"name_OGLE": name_OGLE}
-				ROGUE.evaluate_event(name_dict)
+				event = {"name_OGLE": name_OGLE, "in_K2_footprint": in_K2_footprint, \
+							  "in_K2_superstamp": in_K2_superstamp, "during_K2_campaign": during_K2_campaign}
+				ROGUE.evaluate_event(event)
 				logger.info("-------------------------------------")
 	logger.info("Finished checking master list..")	
 
