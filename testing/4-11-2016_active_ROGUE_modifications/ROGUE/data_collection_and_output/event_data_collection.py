@@ -445,7 +445,7 @@ u0: %s +/-%s\
 """ % (event["name_ARTEMIS_MOA"], event["tMax_ARTEMIS_MOA"], event["tMax_err_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], \
 	   event["tE_err_ARTEMIS_MOA"], event["u0_ARTEMIS_MOA"], event["u0_err_ARTEMIS_MOA"])
 
-	if event.has_key("name_ARTEMIS_OLGE"):
+	if event.has_key("name_ARTEMIS_OGLE"):
 		output_string += \
 """\
 <br>
