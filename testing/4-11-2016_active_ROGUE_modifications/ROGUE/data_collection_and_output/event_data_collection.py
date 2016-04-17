@@ -162,7 +162,10 @@ def collect_data_OGLE(event_name):
 	tables = soup.find_all("table")
 	logger.debug(str(soup))
 	intro_table = tables[1]
-	remarks = str(intro_table.find_all('tr')[4].find_all("td")[1].string)
+	intro_table_rows = intro_table.find_all('tr')
+	RA = str(intro_table_rows[2].find_al("td")[1].string)
+	Dec = str(intro_table_rows[3].find_al("td")[1].string)
+	remarks = str(intro_table_rows[4].find_all("td")[1].string)
 	#remarks = str(soup.find(string="Remarks       ").next_element.string)
 
 	if remarks == "\n":
@@ -186,7 +189,8 @@ def collect_data_OGLE(event_name):
 								 "tMax_OGLE": tMax_values[0], "tMax_err_OGLE": tMax_values[1], \
 								 "tE_OGLE": tau_values[0], "tE_err_OGLE": tau_values[1], \
 								 "u0_OGLE": u0_values[0], "u0_err_OGLE": u0_values[1], \
-								 "lCurve_OGLE": lCurve_plot_URL, "lCurve_zoomed_OGLE": lCurve_plot_zoomed_URL}
+								 "lCurve_OGLE": lCurve_plot_URL, "lCurve_zoomed_OGLE": lCurve_plot_zoomed_URL, \
+								 "RA_OGLE": RA, "Dec_OGLE": Dec}
 
 	logger.debug("OGLE values: " + str(values))
 	return values
@@ -197,26 +201,59 @@ def parse_values_OGLE(columns):
 	return (val, val_Err)	
 
 def collect_data_MOA(event_name):
-	ID = get_ID_MOA(event_name)
-	if ID == "":
-		logger.warning("Cannot not find MOA ID. Cannot collect MOA data from webpage or local file.")
-		return {}
-	collect_data_MOA_via_ID(ID)
+	file_data_MOA = get_file_data_MOA(event_name)
+	
+	file_data_MOA_len = len(file_data_MOA)
+	if file_data_MOA_len > 1:
+		ID = file_data_MOA[1]
+	else:
+		logger.warning("Cannot obtain MOA ID. Data list length is %s, which is < 2. Expected ID at position 1." % file_data_MOA_len)
+		ID = ""
 
-def get_ID_MOA(event_name):
+	if file_data_MOA_len > 2:
+		RA_degrees = file_data_MOA[2]
+	else:
+		logger.warning("Cannot obtain RA in degrees. Data list length is %s, which is < 3. Expected RA at position 2." % file_data_MOA_len)
+		RA_degrees = ""
+
+	if file_data_MOA_len > 3:
+		Dec_degrees = file_data_MOA[3]
+	else:
+		logger.warning("Cannot obtain Dec in degrees. Data list length is %s, which is < 4. Expected Dec at position 3." % file_data_MOA_len)
+		Dec_degrees = ""
+
+	event_update = collect_data_MOA_via_ID(ID)
+
+	if ID != "":
+		event_update["ID_MOA"] = ID
+	if RA_degrees != "":
+		event_update["RA_degrees_MOA"] = RA_degrees
+	if Dec_degrees != "":
+		event_update["Dec_degrees_MOA"] = Dec_degrees
+
+	return event_update
+
+def get_file_data_MOA(event_name):
 	with open(MOA_DATA_FILEPATH, "r") as MOA_file:
-		ID_MOA = ""
+		survey_data = []
 		for line in MOA_file.read():
 			line_split = line.split()
 			line_event_name = line_split[0]
 			
 			if line_event_name == event_name:
-				ID_MOA = line.split()[1]	
+				survey_data = line_split()	
 
-		if ID_MOA == "":
+		survey_data_len = len(survey_data)
+		if survey_data_len < 1:
 			logger.warning("MOA event %s not found in parameter file (located in %s)." % (event_name, MOA_DATA_FILEPATH))
-			logger.warning("Returning MOA ID as empty string.")
-		return ID_MOA	
+			logger.warning("Returning empty list as survey file data.".
+		elif survey_data_len < 4:
+			logger.warning(("MOA event %s data file found (located in %s), " + \
+						   "but there are too few items in the file's first line.") % (event_name, MOA_DATA_FILEPATH))
+			logger.warning("There are %s items. Expected more than 3 items." % (survey_data_len))
+			logger.warning("List obtained from splitting the first line of file:\n%s" % (str(survey_data)))
+
+		return survey_data
 
 def collect_data_MOA_via_ID(ID):
 	name_URL = MOA_dir + "/display.php?id=" + ID
@@ -247,6 +284,8 @@ def collect_data_MOA_via_ID(ID):
 		mag = mag_values[0]
 		mag_err = mag_values[1]
 	
+	RA = soup.find(string="RA:").next_element.string
+	Dec = soup.find(string="Dec:").next_element.string
 	assessment = soup.find(string="Current assessment:").next_element.string
 	remarks = str(soup.find_all("table")[1].find("td").string)
 
@@ -255,8 +294,9 @@ def collect_data_MOA_via_ID(ID):
 				  "tMax_MOA": tMax_JD_values[0], "tMax_err_MOA": tMax_JD_values[1], \
 				  "tE_MOA": tE_values[0], "tE_err_MOA": tE_values[1], \
 				  "u0_MOA": u0_values[0], "u0_err_MOA": u0_values[1], \
-				  "mag_MOA": mag_values[0], "mag_err_MOA": mag_values[1], 
-				  "lCurve_MOA": lCurve_plot_URL, "assessment_MOA": assessment, "remarks_MOA": remarks}
+				  "mag_MOA": mag_values[0], "mag_err_MOA": mag_values[1], \
+				  "lCurve_MOA": lCurve_plot_URL, "RA_MOA": RA, "Dec_MOA": Dec, \
+				  "assessment_MOA": assessment, "remarks_MOA": remarks}
 
 	logger.debug("MOA values: " + str(values_MOA))
 	return values_MOA	
@@ -294,7 +334,7 @@ def get_mag_MOA(event_page_soup):
 		mag_values = None
 	return mag_values
 
-def get_values_ARTEMIS(event_name):
+def collect_data_ARTEMIS(event_name):
 
 	survey_name = event_name.split("-")[0]	
 	
@@ -308,7 +348,7 @@ def get_values_ARTEMIS(event_name):
 		logger.warning("Event %s does not have OGLE or MOA survey prefix." % event_name)
 		logger.warning("Cannot collect ARTEMIS data.")
 		return {}
-
+	"2016-BLG-123"
 	filename += event_name_short[2:4] + "%04d" % int(event_name_short[9:])
 	model_filepath = os.path.join(ARTEMIS_DIR, filename + ".model")
 	if not os.path.isfile(model_filepath):
@@ -316,6 +356,8 @@ def get_values_ARTEMIS(event_name):
 	with open(model_filepath,'r') as file:
 		line = file.readline()
 	entries = line.split()
+	RA = float(entries[0])
+	Dec = float(entries[1])
 	t0 = float(entries[3]) + 2450000.0 #UTC(?)
 	t0_err = float(entries[4])
 	tE = float(entries[5]) #days
@@ -325,7 +367,8 @@ def get_values_ARTEMIS(event_name):
 	values = {("name_ARTEMIS_" + survey_name): filename, ("tMax_ARTEMIS_" + survey_name): t0, \
 			  ("tMax_err_ARTEMIS_" + survey_name): t0_err, ("u0_ARTEMIS_" + survey_name): u0, \
 			  ("u0_err_ARTEMIS_" + survey_name): u0_err, ("tE_ARTEMIS_" + survey_name): tE, \
-			  ("tE_err_ARTEMIS_" + survey_name): tE_err}
+			  ("tE_err_ARTEMIS_" + survey_name): tE_err, ("RA_ARTEMIS_" + survey_name): RA, \
+			  ("Dec_ARTEMIS_" + survey_name): Dec}
 
 	if survey_name == "MOA":
 		logger.info("ARTEMIS MOA values: " + str(values))

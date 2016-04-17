@@ -45,7 +45,7 @@ def convert_string_to_boolean(string):
 def check_event_master_list(local_events):
 
 	if local_events == None:
-		return #DEBUG: fix later
+		return None #DEBUG: fix later
 
 	local_event_OGLE = local_events["OGLE"]
 	local_event_MOA = local_events["MOA"]

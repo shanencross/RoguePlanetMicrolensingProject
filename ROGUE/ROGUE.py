@@ -30,7 +30,7 @@ import mailAlert # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
 
-DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn it off when actively being used
+DEBUGGING_MODE = False # Turn this flag on if modifying and testing code - turn it off when actively being used
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script

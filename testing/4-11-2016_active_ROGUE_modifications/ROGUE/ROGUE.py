@@ -109,6 +109,18 @@ FIELDNAMES = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", 
 
 DELIMITER = ","
 
+
+"""
+#List of tests we will use to determine whether to send out notifications for an event.
+#Any tests omitted will still be run and recorded, but will not affect whether mail notifications
+#are sent out.
+#Possible criteria: tE, microlensing_assessment_MOA, microlensing_region, mag
+CRITERIA = ["tE"]
+
+# Dictionary showing what
+TESTS =
+"""
+
 # Flag for mail alerts functionality and list of mailing addresses
 if DEBUGGING_MODE:
 	MAIL_ALERTS_ON = True
@@ -173,76 +185,114 @@ def evaluate_event(event):
 		logger.warning(ex)
 		return
 
-
-	"""
-	Source checks listed in order of priority. Rearrange statements to change priority.
-	For example, if OGLE is at the top of the if/elif chain, 
-	and the event has both OGLE and MOA values available,
-	then the OGLE values will be used to evaluate whether to trigger
-	"""
+	sources = []
 	if updated_event.has_key("name_OGLE"):
-		source = "OGLE"
-	elif updated_event.has_key("name_ARTEMIS_OGLE"):
-		source = "ARTEMIS_OGLE"
-	elif updated_event.has_key("name_ARTEMIS_MOA"):
-		source = "ARTEMIS_MOA"
-	elif updated_event.has_key("name_MOA"):
-		source = "MOA"
+		sources.append("OGLE")
+	if updated_event.has_key("name_ARTEMIS_OGLE"):
+		sources.append("ARTEMIS_OGLE")
+	if updated_event.has_key("name_ARTEMIS_MOA"):
+		sources.append("ARTEMIS_MOA")
+	if updated_event.has_key("name_MOA"):
+		sources.append("MOA")
 
-	evaluate_event_data(updated_event, source=source)
+	evaluate_event_data(updated_event, sources=sources)
 	# evaluate Einstein time, microlensing vs. cv status, and magnitude
 	# for whether to trigger observation
 	#evaluate_event_page_MOA(values_MOA)
 
-def evaluate_event_data(event, source="OGLE"):
+def evaluate_event_data(event, sources=["OGLE"]):
 	"""Evaluate event using information from the survey event page or ARTEMIS file."""
 
-	tE_key = "tE_" + source
-	tE_err_key = "tE_err_" + source
+	trigger_event = False
+	tE_test = "untested"
+	microlensing_assessment_test = "untested"
+	microlensing_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
+	microlensing_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
+	mag_test = "untested"
+	
+	assement_MOA = ""
+	for source in sources:
+		# Run Einstein time test
+		tE_key = "tE_" + source
+		tE_err_key = "tE_err_" + source
+		tE = event[tE_key]
+		tE_err = event[tE_err_key]
 
-	tE = event[tE_key]
-	tE_err = event[tE_err_key]
+		logger.info("For fit from source %s:" % (source))
+		einstein_time_check = check_einstein_time(tE, tE_err)
+		if einstein_time_check:
+			logger.info("%s Einstein time passed!" % source)
+			tE_test = "passed"
+		else:
+			logger.info("%s Einstein time failed: lower bound must be equal to or greater than %s days." % (source, str(MAX_EINSTEIN_TIME))),e
+			tE_test = "failed"		
 
-	if check_einstein_time(tE, tE_err):
+		# Run tests which only apply to MOA events
+		if source == "MOA":
+			# Run MOA microlensing assessment test
+			assessment_MOA = event["assessment_MOA"]
+
+			# Run MOA most-recent-magnitude-without-too-large-of-an-error test
+			mag_values = [event[mag_MOA], event[mag_MOA_err]]
+			if check_mag(mag_values)
+				mag_test = "passed"
+			else:
+				mag_test = "failed"
+
+			#DEBUG: Run alternative K2 microlensing superstamp testing
+			# For testing agreement with two methods of testing K2 superstamp
+			if DEBUGGING_MODE:
+				RA_degrees_MOA = event["RA_degrees_MOA"]
+				Dec_degrees_MOA = event["Dec_degrees_MOA"]
+				if check_microlens_region(RA_degrees_MOA, Dec_degrees_MOA):
+					microlensing_region_alternate_test = "passed"
+				else:
+					microlensing_region_alternate_test = "failed"
+
+	if assessment_MOA != "":
+		if is_microlensing(assessment_MOA):
+			microlensing_assessment_test = "passed"
+		else:
+			microlensing_assessment_test = "failed
+
+	if event.has_key("in_K2_superstamp")
+		if event["in_K2_superstamp"]:
+			microlensing_region_test = "Passed"
+		else:
+			microlensing_region_test = "Failed"
+	
+	#DEBUG: Testing agreement with using K2 superstamp test ourselves, instead of relying on master list
+	if DEBUGGING_MODE:
+		if microlensing_region_test_pass != microlensing_region_test_alternative_pass:
+			logger.warning("There is disagreement about the test for whether the event is in the K2 superstamp.")
+			logger.warning("The test which uses the K2fov module, evaluating the RA and Dec from MOA, says that the event:")
+			if microlensing_region_test_alternative_pass:
+				logger.warning("passes.")
+			else:
+				logger.warning("does NOT pass.")
+			logger.warning("The exoFOP master event list test says that the event:")
+			if microlensing_region_test_pass:
+				logger.warning("passes.")
+			else:
+				logger.warning("does NOT pass.")	
+				logger.warning("This means the superstamp entry in the master list is either False or Unknown.")	
+
+	# Add test results to event dictionary
+	event["tE_test"] = tE_test
+	event["microlensing_assessment_test"] = microlensing_assesment_test
+	event["microlensing_region_test"] = microlensing_region_test
+	if DEBUGGING_MODE:
+		event["microlensing_region_alternate_test"] = microlensing_region_alternate_test
+	event["mag_test"] = mag_test
+
+	# Turn on trigger flag if the tE test was successful - 
+	# we can change the criteria for activating the trigger flag if we'd like
+	if tE_test_pass:
+		trigger_event = True
+
+	# Trigger if trigger flag is on
+	if trigger_event:
 		event_trigger(event)
-	else:
-		logger.info("Einstein time failed: lower bound must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
-
-	"""
-	# Check if event passes Einstein Time test
-	if check_einstein_time(values_MOA["tE"], values_MOA["tE_err"]):
-		# Check if event passes K2 microlensing region test
-		if check_microlens_region(values_MOA["RA"], values_MOA["Dec"]):
-			evaluate_assessment_and_mag_MOA(event_page_soup, values_MOA)
-		else:
-			logger.info("Microlensing region failed: Not in K2 Campaign 9 microlensing region")
-	# fail to trigger if Einstein Time lower bound (Einstein time - Einstein time error) exceeds max Einstein Time threshold
-	else:
-		logger.info("Einstein time failed: lower bound must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
-	"""
-
-def evaluate_assessment_and_mag_MOA(event_page_soup, values_MOA):
-	# Parse page soup for microlensing assessment of event
-	assessment = get_microlensing_assessment(event_page_soup)
-	values_MOA["assessment"] = assessment
-
-	if is_microlensing(assessment):
-		# parse page soup for magnitude and error of most recent observation of event
-		mag_values = event_data_collection.get_mag(event_page_soup)
-		values_MOA["mag"] = mag_values[0]
-		values_MOA["mag_err"] = mag_values[1]
-
-		# trigger if magnitude matches critera along with the preceding checks
-		if check_mag(mag_values):
-			trigger_event(event_page_soup, values_MOA)
-
-		# fail to trigger if mag and/or mag error values are unacceptable
-		else:
-			logger.info("Magnitude failed: must be brighter than " + str(MIN_MAG) + " AND have error less than " + str(MAX_MAG_ERR))
-
-	# fail to trigger if assessment is non-microlensing
-	else:
-		logger.info("Assessment failed: Not assessed as microlensing")
 
 def trigger_event(event):
 	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
@@ -259,7 +309,7 @@ def trigger_event(event):
 	if SUMMARY_BUILDER_ON:
 		logger.info("Building and outputting event summary page...")
 		try:
-			event_data_collection.build_summary(data_dict)
+			event_data_collection.build_summary(event)
 		except Exception as ex:
 			logger.warning("Exception building/outputting event summary")
 			logger.warning(ex)
@@ -267,7 +317,7 @@ def trigger_event(event):
 	if EVENT_TRIGGER_RECORD_ON:
 		logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later..")
 		try:
-			add_event_to_trigger_dict(data_dict)
+			add_event_to_trigger_dict(event)
 		except Exception as ex:
 			logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
 			logger.warning(ex)
@@ -340,7 +390,8 @@ def check_mag(mag_values):
 		return False
 	mag = mag_values[0]
 	mag_err = mag_values[1]
-	mag_err_too_large = mag_values[2]
+	#mag_err_too_large = mag_values[2]
+	mag_err_too_large = (mag_err > MAX_MAG_ERR)
 	logger.info("Magnitude: " + str(mag))
 	logger.info("Magnitude error: " + str(mag_err))
 
@@ -351,11 +402,11 @@ def check_mag(mag_values):
 	else:
 		return True
 
-def add_event_to_trigger_dict(event_data_dict):
+def add_event_to_trigger_dict(event):
 	"""Add event data dictionary (dictionary containing separate dictionaries for data from each survey) \
 	to dictionary of event triggers, first converting it to a single event dictionary containing items from all surveys."""
 
-	event = convert_data_dict(event_data_dict)
+	#event = convert_data_dict(event_data_dict)
 
 	# Use OGLE name for key pointing to event as value if availble.
 	if event.has_key("name_OGLE") and event["name_OGLE"] != "":
@@ -375,44 +426,6 @@ def add_event_to_trigger_dict(event_data_dict):
 
 	event_name = event[name_key]
 	event_trigger_dict[event_name] = event
-
-def convert_data_dict(event_data_dict):
-	"""Convert event data dictionary (dictionary containing separate dictionaries for data from each survey) \
-	for an event to proper format, combining data from all surveys into one dictionary."""
-
-	"""
-	event_data_dict is a dictionary of up to four event dictionaries for the same event.
-	They contain MOA, OGLE, ARTEMIS_MOA, and ARTEMIS_OGLE values respectively.
-	We convert this to a single dictionary with items from all surveys, and keys with survey suffixes attached
-	to distinguish, for examle, tE_MOA from the tE_OGLE.
-	"""
-	logger.debug("Original event dict: " + str(event_data_dict))
-
-	converted_event_dict = {}
-
-	for fieldname in FIELDNAMES:
-		if fieldname[-12:] == "_ARTEMIS_MOA" and event_data_dict.has_key("ARTEMIS_MOA") and event_data_dict["ARTEMIS_MOA"] != "":
-			converted_event_dict[fieldname] = event_data_dict["ARTEMIS_MOA"][fieldname[:-12]]
-
-		elif fieldname[-4:] == "_MOA" and fieldname[-12:] != "_ARTEMIS_MOA" and event_data_dict.has_key("MOA") and event_data_dict["MOA"] != "":
-			converted_event_dict[fieldname] = event_data_dict["MOA"][fieldname[:-4]]
-
-		elif fieldname[-13:] == "_ARTEMIS_OGLE" and event_data_dict.has_key("ARTEMIS_OGLE") and event_data_dict["ARTEMIS_OGLE"] != "":
-			converted_event_dict[fieldname] = event_data_dict["ARTEMIS_OGLE"][fieldname[:-13]]
-
-		elif fieldname[-5:] == "_OGLE" and fieldname[-13:] != "_ARTEMIS_OGLE" and event_data_dict.has_key("OGLE") and event_data_dict["OGLE"] != "":
-			converted_event_dict[fieldname] = event_data_dict["OGLE"][fieldname[:-5]]
-
-		# Convert the shortened names such as "2016-BLG-123" to the full names with survey prefixes,
-		# like "MOA-2016-BLG-123" or "OGLE-2016"BLG-123";
-		# Last condition Probably not necessary, but just in case
-		if fieldname[:5] == "name_" and converted_event_dict.has_key(fieldname) and converted_event_dict[fieldname] != "":
-			surveyName = fieldname[5:]
-			converted_event_dict[fieldname] = surveyName + "-" + converted_event_dict[fieldname]
-
-		logger.debug("Converted event dict: " + str(converted_event_dict))
-
-	return converted_event_dict
 
 def save_and_compare_triggers():
 	if EVENT_TRIGGER_RECORD_ON:
