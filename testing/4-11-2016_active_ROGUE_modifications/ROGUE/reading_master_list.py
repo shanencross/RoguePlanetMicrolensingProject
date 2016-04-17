@@ -23,7 +23,7 @@ else:
 	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
 
 if DEBUGGING_MODE:
-	EVENT_MASTER_LIST_FILEPATH = os.path.join(sys.path[0], "reading_master_list_folder/reading_master_list")
+	EVENT_MASTER_LIST_FILEPATH = os.path.join(sys.path[0], "master_events_list_folder/master_events_list")
 else:
 	EVENT_MASTER_LIST_FILEPATH = "/science/robonet/rob/Operations/ExoFOP/master_events_list"
 

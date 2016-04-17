@@ -84,7 +84,10 @@ EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRI
 if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
 	os.makedirs(EVENT_TRIGGER_RECORD_DIR)
 """
-SURVEY_DATA_DIR = "/science/robonet/rob/Operations/SurveyData/"
+if DEBUGGING_MODE:
+	SURVEY_DATA_DIR = os.path.join(sys.path[0], "survey_data")
+else:
+	SURVEY_DATA_DIR = "/science/robonet/rob/Operations/SurveyData/"
 MOA_DATA_FILEPATH = os.path.join(SURVEY_DATA_DIR, "MOA/moa_lenses.par")
 OGLE_data_filepath = os.path.join(SURVEY_DATA_DIR, ("OGLE/lenses.par." + event_year_OGLE))
 
@@ -96,16 +99,22 @@ def collect_data(event):
 	event_year_OGLE = ""
 	event_year_MOA = ""
 	if event.has_key("name_OGLE"):
+		logger.debug("The event has an OGLE name.")
 		name_OGLE = event["name_OGLE"]
 		event_year_OGLE = name_OGLE[5:9]
 
+		logger.debug("Attempting to collect OGLE data...")
 		updated_event.update(collect_data_OGLE(name_OGLE))
+		logger.debug("Attempting to collect ARTEMIS data using OGLE name...")
 		updated_event.update(collect_data_ARTEMIS(name_OGLE))
 
 	if event.has_key("name_MOA"):
+		logger.debug("The event has a MOA name.")
 		name_MOA = event["name_MOA"]
 		event_year_MOA = name_MOA[4:8]
+		logger.debug("Attempting to collect MOA data...")
 		updated_event.update(collect_data_MOA(name_MOA))
+		logger.debug("Attempting to collect ARTEMIS data using MOA name...")
 		updated_event.update(collect_data_ARTEMIS(name_MOA))
 
 	update_year(event_year_OGLE, event_year_MOA)
@@ -160,14 +169,14 @@ def collect_data_OGLE(event_name):
 	page = request.content
 	soup = BeautifulSoup(page, 'lxml')
 	tables = soup.find_all("table")
-	logger.debug(str(soup))
+	#logger.debug(str(soup))
 	intro_table = tables[1]
 	intro_table_rows = intro_table.find_all('tr')
-	RA = str(intro_table_rows[2].find_al("td")[1].string)
-	Dec = str(intro_table_rows[3].find_al("td")[1].string)
+	RA = str(intro_table_rows[2].find_all("td")[1].string).rstrip()
+	Dec = str(intro_table_rows[3].find_all("td")[1].string).rstrip()
 	remarks = str(intro_table_rows[4].find_all("td")[1].string)
 	#remarks = str(soup.find(string="Remarks       ").next_element.string)
-
+	
 	if remarks == "\n":
 		remarks = "None"
 
@@ -201,27 +210,29 @@ def parse_values_OGLE(columns):
 	return (val, val_Err)	
 
 def collect_data_MOA(event_name):
+	logger.debug("Getting RA and Dec in degrees and ID from MOA data file...")
 	file_data_MOA = get_file_data_MOA(event_name)
 	
 	file_data_MOA_len = len(file_data_MOA)
 	if file_data_MOA_len > 1:
-		ID = file_data_MOA[1]
+		ID = file_data_MOA[1].rstrip()
 	else:
 		logger.warning("Cannot obtain MOA ID. Data list length is %s, which is < 2. Expected ID at position 1." % file_data_MOA_len)
 		ID = ""
 
 	if file_data_MOA_len > 2:
-		RA_degrees = file_data_MOA[2]
+		RA_degrees = file_data_MOA[2].rstrip()
 	else:
 		logger.warning("Cannot obtain RA in degrees. Data list length is %s, which is < 3. Expected RA at position 2." % file_data_MOA_len)
 		RA_degrees = ""
 
 	if file_data_MOA_len > 3:
-		Dec_degrees = file_data_MOA[3]
+		Dec_degrees = file_data_MOA[3].rstrip()
 	else:
 		logger.warning("Cannot obtain Dec in degrees. Data list length is %s, which is < 4. Expected Dec at position 3." % file_data_MOA_len)
 		Dec_degrees = ""
 
+	logger.debug("Collecting MOA data from event survey page using MOA ID...")
 	event_update = collect_data_MOA_via_ID(ID)
 
 	if ID != "":
@@ -285,8 +296,8 @@ def collect_data_MOA_via_ID(ID):
 		mag = mag_values[0]
 		mag_err = mag_values[1]
 	
-	RA = soup.find(string="RA:").next_element.string
-	Dec = soup.find(string="Dec:").next_element.string
+	RA = (soup.find(string="RA:").next_element.string).rstrip()
+	Dec = (soup.find(string="Dec:").next_element.string).rstrip()
 	assessment = soup.find(string="Current assessment:").next_element.string
 	remarks = str(soup.find_all("table")[1].find("td").string)
 
@@ -338,21 +349,26 @@ def collect_data_ARTEMIS(event_name):
 	survey_name = event_name.split("-")[0]	
 	
 	if survey_name == "MOA":
+		logger.debug("Event has a MOA name. Using KB prefix.")
  		filename = "KB"
 		event_name_short = event_name[4:]
 	elif survey_name == "OGLE":
+		logger.debug("Event has an OGLE name. Using OB prefix.")
 		filename = "OB"
 		event_name_short = event_name[5:]
 	else:
 		logger.warning("Event %s does not have OGLE or MOA survey prefix." % event_name)
 		logger.warning("Cannot collect ARTEMIS data.")
 		return {}
-	"2016-BLG-123"
 	filename += event_name_short[2:4] + "%04d" % int(event_name_short[9:])
 	model_filepath = os.path.join(ARTEMIS_DIR, filename + ".model")
+
+	logger.debug("Attempting to open ARTEMIS file %s ..." % model_filepath)
 	if not os.path.isfile(model_filepath):
-		return None
+		logger.debug("No ARTEMIS file found.")
+		return {}
 	with open(model_filepath,'r') as file:
+		logger.debug("Opened ARTEMIS file.")
 		line = file.readline()
 	entries = line.split()
 	RA = float(entries[0])

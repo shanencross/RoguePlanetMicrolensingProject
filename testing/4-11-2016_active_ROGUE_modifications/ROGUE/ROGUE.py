@@ -89,7 +89,7 @@ TIME_INDEX = 5
 U0_INDEX = 6
 BASELINE_MAG_INDEX = 7
 
-MAX_EINSTEIN_TIME = 3 # days - only check events as short or shorter than this
+MAX_EINSTEIN_TIME = 10 # days - only check events as short or shorter than this
 MIN_MAG = 17.5 # magnitude units - only check events as bright or brighter than this
 			   # (i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
@@ -203,14 +203,14 @@ def evaluate_event(event):
 def evaluate_event_data(event, sources=["OGLE"]):
 	"""Evaluate event using information from the survey event page or ARTEMIS file."""
 
-	trigger_event = False
+	trigger_this_event = False
 	tE_test = "untested"
 	microlensing_assessment_test = "untested"
 	microlensing_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
 	microlensing_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
 	mag_test = "untested"
 	
-	assement_MOA = ""
+	assessment_MOA = ""
 	for source in sources:
 		# Run Einstein time test
 		tE_key = "tE_" + source
@@ -224,7 +224,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 			logger.info("%s Einstein time passed!" % source)
 			tE_test = "passed"
 		else:
-			logger.info("%s Einstein time failed: lower bound must be equal to or greater than %s days." % (source, str(MAX_EINSTEIN_TIME))),e
+			logger.info("%s Einstein time failed: lower bound must be equal to or less than %s days." % (source, str(MAX_EINSTEIN_TIME)))
 			tE_test = "failed"		
 
 		# Run tests which only apply to MOA events
@@ -239,7 +239,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 			else:
 				mag_test = "failed"
 
-			#DEBUG: Run alternative K2 microlensing superstamp testing
+			#DEBUG: Run alternate K2 microlensing superstamp testing
 			# For testing agreement with two methods of testing K2 superstamp
 			if DEBUGGING_MODE:
 				RA_degrees_MOA = event["RA_degrees_MOA"]
@@ -257,29 +257,33 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 	if event.has_key("in_K2_superstamp"):
 		if event["in_K2_superstamp"]:
-			microlensing_region_test = "Passed"
+			microlensing_region_test = "passed"
 		else:
-			microlensing_region_test = "Failed"
+			microlensing_region_test = "failed"
 	
 	#DEBUG: Testing agreement with using K2 superstamp test ourselves, instead of relying on master list
 	if DEBUGGING_MODE:
-		if microlensing_region_test_pass != microlensing_region_test_alternative_pass:
+		if microlensing_region_test != microlensing_region_alternate_test:
 			logger.warning("There is disagreement about the test for whether the event is in the K2 superstamp.")
 			logger.warning("The test which uses the K2fov module, evaluating the RA and Dec from MOA, says that the event:")
-			if microlensing_region_test_alternative_pass:
+			if microlensing_region_alternate_test == "passed":
 				logger.warning("passes.")
-			else:
+			elif microlensing_region_alternate_test == "failed":
 				logger.warning("does NOT pass.")
+			elif microlensing_region_alternate_test == "untested":
+				logger.warning("was not tested.")
 			logger.warning("The exoFOP master event list test says that the event:")
-			if microlensing_region_test_pass:
+			if microlensing_region_test == "passed":
 				logger.warning("passes.")
-			else:
+			elif microlensing_region_test == "failed":
 				logger.warning("does NOT pass.")	
-				logger.warning("This means the superstamp entry in the master list is either False or Unknown.")	
+				logger.warning("This means the superstamp entry in the master list is either False or Unknown.")
+			elif microlensing_region_test == "untested":
+				logger.warning("was not tested.")
 
 	# Add test results to event dictionary
 	event["tE_test"] = tE_test
-	event["microlensing_assessment_test"] = microlensing_assesment_test
+	event["microlensing_assessment_test"] = microlensing_assessment_test
 	event["microlensing_region_test"] = microlensing_region_test
 	if DEBUGGING_MODE:
 		event["microlensing_region_alternate_test"] = microlensing_region_alternate_test
@@ -287,19 +291,19 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 	# Turn on trigger flag if the tE test was successful - 
 	# we can change the criteria for activating the trigger flag if we'd like
-	if tE_test_pass:
-		trigger_event = True
+	if tE_test == "passed":
+		trigger_this_event = True
 
 	# Trigger if trigger flag is on
-	if trigger_event:
-		event_trigger(event)
+	if trigger_this_event:
+		trigger_event(event)
 
 def trigger_event(event):
 	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
 
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_ALERTS_ON:
-		logger.info("Mailing event alert...")
+		logger.info("Mailing event notification...")
 		try:
 			send_mail_alert(event)
 		except Exception as ex:
@@ -315,7 +319,7 @@ def trigger_event(event):
 			logger.warning(ex)
 
 	if EVENT_TRIGGER_RECORD_ON:
-		logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later..")
+		logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later...")
 		try:
 			add_event_to_trigger_dict(event)
 		except Exception as ex:
@@ -445,11 +449,11 @@ def save_and_compare_triggers():
 				logger.warning("Exception generating/outputting comparison table HTML page")
 				logger.warning(ex)		
 
-def get_alert_level_and_message(values_MOA):
+def get_alert_level_and_message(event):
 	"""Return alert level as "Warning" or "Alert" and related message depending on whether tE error exceeds our threshold constant""" 
 
 	message = "Because the Einstein Time error is"
-	tE_err = float(values_MOA["tE_err"])
+	tE_err = float(event["tE_err"])
 
 	if tE_err <= EINSTEIN_TIME_ERROR_ALERT_THRESHOLD:
 		alert_level = "Alert"
@@ -464,27 +468,75 @@ def get_alert_level_and_message(values_MOA):
 	
 	return alertDict
 
-def send_mail_alert(values_MOA):
+def send_mail_alert(event):
 	"""Send mail alert upon detecting short duration microlensing event"""
-	event_name = values_MOA["name"]
+	
+	if DEBUGGING_MODE:
+		alert_level = "Warning"
+		alert_level_message = ""
+	else:
+		alert_level_dict = get_alert_level_and_message(event)
+		alert_level = alert_level_dict["alert level"]
+		alert_level_message = alert_level_dict["message"]
 
-	alert_level_dict = get_alert_level_and_message(values_MOA)
-	alert_level = alert_level_dict["alert level"]
-	alert_level_message = alert_level_dict["message"]
-
-	mail_subject = event_name + " - Potential Short Duration Microlensing Event " + str(alert_level)
-	summary_page_URL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + event_name + "_summary.html"
 	message_text = \
 """\
 Potential Short Duration Microlensing Event %s
 %s
-Event Name: %s
-Event ID: %s
-Einstein Time (MOA): %s +/- %s
+
+""" % (alert_level, alert_level_message)
+
+	if event.has_key("name_OGLE"):
+		message_text += \
+"""\
+OGLE Event Name: %s
+OGLE Einstein Time: %s +/- %s
+OGLE Event Page: %s
+
+""" % ( event["name_OGLE"], event["tE_OGLE"], event["tE_err_OGLE"], event["pageURL_OGLE"])
+
+	if event.has_key("name_MOA"):
+		message_text += \
+"""\
+MOA Event Name: %s
+MOA Event ID: %s
+MOA Einstein Time: %s +/- %s
 MOA Event Page: %s
-Event summary page: %s\
-""" % (alert_level, alert_level_message, event_name, values_MOA["ID"], values_MOA["tE"], values_MOA["tE_err"], values_MOA["pageURL"], summary_page_URL)
-	mailAlert.send_alert(message_text, mail_subject, MAILING_LIST)
+
+""" % ( event["name_MOA"], event["ID_MOA"], event["tE_MOA"], event["tE_err_MOA"], event["pageURL_MOA"])
+
+	# The name used for reference, in the subject and summary page URL, is the OGLE event if available
+	# Otherwise it is the MOA name
+	if event.has_key("name_OGLE"):
+		reference_event_name = event["name_OGLE"]
+	elif event.has_key("name_MOA"):
+		reference_event_name = event["name_MOA"]
+	else:
+		logger.warning("Event has neither MOA nor OGLE name.")
+		logger.warning("Canceling mail notification.")
+		return
+	
+	if event.has_key("name_ARTEMIS_OGLE"):
+		message_text += \
+"""\
+ARTEMIS OGLE Event Name: %s
+ARTEMIS OGLE Einstein Time: %s +/- %s
+
+""" % ( event["name_ARTEMIS_OGLE"], event["tE_ARTEMIS_OGLE"], event["tE_err_ARTEMIS_OGLE"])
+
+	if event.has_key("name_ARTEMIS_MOA"):
+		message_text += \
+"""\
+ARTEMIS MOA Event Name: %s
+ARTEMIS MOA Einstein Time: %s +/- %s
+
+""" % ( event["name_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], event["tE_err_ARTEMIS_MOIA"])
+
+	mail_subject = reference_event_name + " - Potential Short Duration Microlensing Event " + str(alert_level)
+	summary_page_URL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + reference_event_name + "_summary.html"
+	message_text += "Event summary page: %s" % (summary_page_URL)
+
+	mail_alert.send_alert(message_text, mail_subject, MAILING_LIST)
 	logger.info("Event alert mailed!")
 
 def main():

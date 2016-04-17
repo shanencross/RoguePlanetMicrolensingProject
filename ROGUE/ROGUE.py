@@ -314,7 +314,7 @@ def evaluateEventPage_MOA(values_MOA):
 			logger.info("Microlensing region failed: Not in K2 Campaign 9 microlensing region")
 	# fail to trigger if Einstein Time lower bound (Einstein time - Einstein time error) exceeds max Einstein Time threshold
 	else:
-		logger.info("Einstein time failed: lower bound must be equal to or greater than " + str(MAX_EINSTEIN_TIME) + " days")
+		logger.info("Einstein time failed: lower bound must be equal to or less than " + str(MAX_EINSTEIN_TIME) + " days")
 
 def evaluateAssessmentAndMag_MOA(eventPageSoup, values_MOA):
 	# Parse page soup for microlensing assessment of event

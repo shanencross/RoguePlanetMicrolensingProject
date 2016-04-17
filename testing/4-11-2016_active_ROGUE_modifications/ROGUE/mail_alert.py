@@ -10,8 +10,9 @@ def send_alert(message,subject,mailinglist):
 
 	alert = 'echo "'+message+'" | mail -s "'+subject+'" "'+','.join(mailinglist)+'"'
 	(iexec, coutput) = getstatusoutput(alert)
-
+	print str(iexec)
 	return iexec
+	print coutput
 
 #####################################
 # COMMANDLINE TEST SECTION:
