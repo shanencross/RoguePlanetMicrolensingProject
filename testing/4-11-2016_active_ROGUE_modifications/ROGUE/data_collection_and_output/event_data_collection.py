@@ -371,8 +371,8 @@ def collect_data_ARTEMIS(event_name):
 		logger.debug("Opened ARTEMIS file.")
 		line = file.readline()
 	entries = line.split()
-	RA = float(entries[0])
-	Dec = float(entries[1])
+	RA = float(entries[0]).rstrip()
+	Dec = float(entries[1]).rstrip()
 	t0 = float(entries[3]) + 2450000.0 #UTC(?)
 	t0_err = float(entries[4])
 	tE = float(entries[5]) #days
