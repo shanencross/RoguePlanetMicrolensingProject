@@ -44,7 +44,7 @@ event_year_MOA = CURRENT_YEAR
 #buildPage() changes these if passed event from different year
 MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + event_year_MOA
 if DEBUGGING_MODE:
-	OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
+	OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
 else:
 	OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews"
 

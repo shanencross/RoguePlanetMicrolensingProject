@@ -225,7 +225,8 @@ def evaluate_event_data(event, sources=["OGLE"]):
 			tE_test = "passed"
 		else:
 			logger.info("%s Einstein time failed: lower bound must be equal to or less than %s days." % (source, str(MAX_EINSTEIN_TIME)))
-			tE_test = "failed"		
+			if tE_test == "untested":			
+				tE_test = "failed"		
 
 		# Run tests which only apply to MOA events
 		if source == "MOA":
