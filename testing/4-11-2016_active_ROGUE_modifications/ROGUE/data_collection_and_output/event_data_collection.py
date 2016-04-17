@@ -397,22 +397,6 @@ def collect_data_ARTEMIS(event_name):
 def build_output_string(event):
 	output_string = ""
 
-	if event.has_key("name_MOA"):
-		output_string += \
-"""MOA event: <br>
-Event: <a href=%s>%s</a> <br>
-Assessment: %s <br>
-Remarks: %s <br>
-tMax: %s +/- %s <br>
-tE: %s +/- %s <br>
-u0: %s +/- %s <br>
-Most recent magnitude: %s +/- %s <br>
-Light Curve: <br>
-<img src=%s width=500> \
-""" % (event["pageURL_MOA"], event["name_MOA"], event["assessment_MOA"], event["remarks_MOA"], event["tMax_MOA"], \
-	   event["tMax_err_MOA"], event["tE_MOA"], event["tE_err_MOA"], event["u0_MOA"], event["u0_err_MOA"], \
-	   event["mag_MOA"], event["mag_err_MOA"], event["lCurve_MOA"])
-
 	if event.has_key("name_OGLE"):
 		output_string += \
 """\
@@ -431,6 +415,22 @@ Light Curve Zoomed: <br>
 """ % (event["pageURL_OGLE"], event["name_OGLE"], event["remarks_OGLE"], event["tMax_OGLE"], event["tMax_err_OGLE"], \
 		event["tE_OGLE"], event["tE_err_OGLE"], event["u0_OGLE"], event["u0_err_OGLE"], \
 		event["lCurve_OGLE"], event["lCurve_zoomed_OGLE"])
+
+	if event.has_key("name_MOA"):
+		output_string += \
+"""MOA event: <br>
+Event: <a href=%s>%s</a> <br>
+Assessment: %s <br>
+Remarks: %s <br>
+tMax: %s +/- %s <br>
+tE: %s +/- %s <br>
+u0: %s +/- %s <br>
+Most recent magnitude: %s +/- %s <br>
+Light Curve: <br>
+<img src=%s width=500> \
+""" % (event["pageURL_MOA"], event["name_MOA"], event["assessment_MOA"], event["remarks_MOA"], event["tMax_MOA"], \
+	   event["tMax_err_MOA"], event["tE_MOA"], event["tE_err_MOA"], event["u0_MOA"], event["u0_err_MOA"], \
+	   event["mag_MOA"], event["mag_err_MOA"], event["lCurve_MOA"])
 
 	if event.has_key("name_ARTEMIS_MOA"):
 		output_string += \
@@ -457,6 +457,23 @@ tE: %s +/- %s <br>
 u0: %s +/-%s\
 """ % (event["name_ARTEMIS_OGLE"], event["tMax_ARTEMIS_OGLE"], event["tMax_err_ARTEMIS_OGLE"], event["tE_ARTEMIS_OGLE"], \
 	   event["tE_err_ARTEMIS_OGLE"], event["u0_ARTEMIS_OGLE"], event["u0_err_ARTEMIS_OGLE"])
+
+	tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "microlensing_alternate_region_test", "mag_test"]
+	output_string += \
+"""\
+<br>
+<br>
+Tests:\
+"""
+
+	for test in tests:
+		if event.has_key(test):
+			output_string += \
+"""\
+<br>
+%s status: %s\
+""" % (test, event[test])
+
 
 #For testing observation trigger button functionality
 #	output_string += \

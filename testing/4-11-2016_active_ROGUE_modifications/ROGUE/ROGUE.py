@@ -28,7 +28,7 @@ from data_collection_and_output import event_data_collection # collecting data f
 														# as well as outputting HTML summary page and event trigger record .csv
 import update_CSV
 import event_tables_comparison
-import mail_alert # script for sending emails by executing command line tool
+import mail_notification # script for sending emails by executing command line tool
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
 
@@ -93,7 +93,7 @@ MAX_EINSTEIN_TIME = 10 # days - only check events as short or shorter than this
 MIN_MAG = 17.5 # magnitude units - only check events as bright or brighter than this
 			   # (i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
-EINSTEIN_TIME_ERROR_ALERT_THRESHOLD = 1 # days - if Einstein Time error is less than this, email is labeled "Event Alert"; 
+EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD = 1 # days - if Einstein Time error is less than this, email is labeled "Event Notification"; 
 										# otherwise email is labeled "Event Warning"
 
 EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
@@ -121,16 +121,16 @@ CRITERIA = ["tE"]
 TESTS =
 """
 
-# Flag for mail alerts functionality and list of mailing addresses
+# Flag for mail notifications functionality and list of mailing addresses
 if DEBUGGING_MODE:
-	MAIL_ALERTS_ON = True
+	MAIL_NOTIFICATIONS_ON = True
 	SUMMARY_BUILDER_ON = True
 	EVENT_TRIGGER_RECORD_ON = True
 	EVENT_TABLE_COMPARISON_ON = True
 	MAILING_LIST = ["shanencross@gmail.com"]
 
 else:
-	MAIL_ALERTS_ON = True
+	MAIL_NOTIFICATIONS_ON = True
 	SUMMARY_BUILDER_ON = True
 	EVENT_TRIGGER_RECORD_ON = True
 	EVENT_TABLE_COMPARISON_ON = True
@@ -223,6 +223,10 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		if einstein_time_check:
 			logger.info("%s Einstein time passed!" % source)
 			tE_test = "passed"
+			if event.has_key("passing_tE_sources"):
+				event["passing_tE_sources"].append(source)
+			else:
+				event["passing_tE_sources"] = [source]
 		else:
 			logger.info("%s Einstein time failed: lower bound must be equal to or less than %s days." % (source, str(MAX_EINSTEIN_TIME)))
 			if tE_test == "untested":			
@@ -249,6 +253,16 @@ def evaluate_event_data(event, sources=["OGLE"]):
 					microlensing_region_alternate_test = "passed"
 				else:
 					microlensing_region_alternate_test = "failed"
+
+	if event.has_key("passing_tE_sources"):
+		event["passing_tE_sources"].sort()
+		passing_tE_sources = event["passing_tE_sources"]
+		passing_tE_sources_output = "Passing tE sources: "
+		for i in xrange(len(passing_tE_sources)):
+			passing_tE_sources_output += passing_tE_sources[i]
+			if i < len(passing_tE_sources) - 1:
+				passing_tE_sources_output += ", "
+		logger.debug(passing_tE_sources_output)
 
 	if assessment_MOA != "":
 		if is_microlensing(assessment_MOA):
@@ -300,15 +314,15 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		trigger_event(event)
 
 def trigger_event(event):
-	"""Runs when an event fits our critera. Triggers mail alerts and builds summary if those flags are on."""
+	"""Runs when an event fits our critera. Triggers mail notifications and builds summary if those flags are on."""
 
 	logger.info("Event is potentially suitable for observation!")
-	if MAIL_ALERTS_ON:
+	if MAIL_NOTIFICATIONS_ON:
 		logger.info("Mailing event notification...")
 		try:
-			send_mail_alert(event)
+			send_mail_notification(event)
 		except Exception as ex:
-			logger.warning("Exception attempting to mail event alert")
+			logger.warning("Exception attempting to mail event notification")
 			logger.warning(ex)
 
 	if SUMMARY_BUILDER_ON:
@@ -450,42 +464,54 @@ def save_and_compare_triggers():
 				logger.warning("Exception generating/outputting comparison table HTML page")
 				logger.warning(ex)		
 
-def get_alert_level_and_message(event):
-	"""Return alert level as "Warning" or "Alert" and related message depending on whether tE error exceeds our threshold constant""" 
+def get_notification_level_and_message(event):
+	"""Return notification level as "Warning" or "notification" and related message depending on whether tE error exceeds our threshold constant""" 
 
-	message = "Because the Einstein Time error is"
-	tE_err = float(event["tE_err"])
+	if not event.has_key("passing_tE_sources"):
+		logger.warning("This event has no recorded passing tE sources (i.e. MOA, OGLE, ARTEMIS_MOA, or ARTEMIS_OGLE).")
+		logger.warning("Cannot discern mail notification level or generate notification level message.")
 
-	if tE_err <= EINSTEIN_TIME_ERROR_ALERT_THRESHOLD:
-		alert_level = "Alert"
-		message += " smaller than an error threshold of " + str(EINSTEIN_TIME_ERROR_ALERT_THRESHOLD)
-	else:
-		alert_level = "Warning"
-		message += " greater than an error threshold of " + str(EINSTEIN_TIME_ERROR_ALERT_THRESHOLD)
+	notification_level = "Warning"
+	for source in event["passing_tE_sources"]:
+		tE_err_key = "tE_err_" + source
+		tE_err = float(event[tE_err_key])
+		if tE_err <= EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD:
+			notification_level = "Alert"
 
-	message += " day(s), this email has been given the status of \"Event %s\"." % str(alert_level)
-	alertDict = {"alert level": alert_level, "message": message}
-	logger.info("Event alert level: Event " + str(alertDict["alert level"]))
+	message = "Because"
+	if notification_level == "Warning":
+		message += " at least one of the Einstein Times that passed our criteria has an error smaller than"
+	elif notification_level == "Alert":
+		message += " none of the Einstein Times that passed our critera have an error greater than"
+
+	message += " an error threshold of " + str(EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD)
+	message += " day(s), this email has been given the status of \"Event %s\"." % str(notification_level)
+	notification_dict = {"notification level": notification_level, "message": message}
+	logger.info("Event notification level: Event " + str(notification_dict["notification level"]))
 	
-	return alertDict
+	return notification_dict
 
-def send_mail_alert(event):
-	"""Send mail alert upon detecting short duration microlensing event"""
-	
+def send_mail_notification(event):
+	"""Send mail notification upon detecting short duration microlensing event"""
+	"""
 	if DEBUGGING_MODE:
-		alert_level = "Warning"
-		alert_level_message = ""
+		notification_level = "Warning"
+		notification_level_message = ""
 	else:
-		alert_level_dict = get_alert_level_and_message(event)
-		alert_level = alert_level_dict["alert level"]
-		alert_level_message = alert_level_dict["message"]
+		notification_level_dict = get_notification_level_and_message(event)
+		notification_level = notification_level_dict["notification level"]
+		notification_level_message = notification_level_dict["message"]
+	"""
+	notification_level_dict = get_notification_level_and_message(event)
+	notification_level = notification_level_dict["notification level"]
+	notification_level_message = notification_level_dict["message"]	
 
 	message_text = \
 """\
 Potential Short Duration Microlensing Event %s
 %s
 
-""" % (alert_level, alert_level_message)
+""" % (notification_level, notification_level_message)
 
 	if event.has_key("name_OGLE"):
 		message_text += \
@@ -533,12 +559,33 @@ ARTEMIS MOA Einstein Time: %s +/- %s
 
 """ % ( event["name_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], event["tE_err_ARTEMIS_MOIA"])
 
-	mail_subject = reference_event_name + " - Potential Short Duration Microlensing Event " + str(alert_level)
+	mail_subject = reference_event_name + " - Potential Short Duration Microlensing Event " + str(notification_level)
 	summary_page_URL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + reference_event_name + "_summary.html"
-	message_text += "Event summary page: %s" % (summary_page_URL)
+	message_text += \
+"""\
+Event summary page: %s 
 
-	mail_alert.send_alert(message_text, mail_subject, MAILING_LIST)
-	logger.info("Event alert mailed!")
+""" % (summary_page_URL)
+
+	if DEBUGGING_MODE:
+		tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "microlensing_region_alternate_test", "mag_test"]
+	else:
+		tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "mag_test"]
+
+	message_text += \
+"""\
+Tests:
+"""
+	for test in tests:
+		if event.has_key(test):
+			message_text += \
+"""\
+%s status: %s
+""" % (test, event[test])
+		
+	mail_notification.send_notification(message_text, mail_subject, MAILING_LIST)
+	logger.debug(message_text)
+	logger.info("Event notification mailed!")
 
 def main():
 	run_ROGUE()
