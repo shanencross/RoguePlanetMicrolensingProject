@@ -42,7 +42,7 @@ event_year_MOA = CURRENT_YEAR
 
 #MOA and OGLE directories set to current year by defaultr; 
 #buildPage() changes these if passed event from different year
-MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + event_year
+MOA_dir = "https://it019909.massey.ac.nz/moa/alert" + event_year_MOA
 if DEBUGGING_MODE:
 	OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/2015" #JUST FOR TESTING/DEBUGGING - REMOVE AND REPLACE WITH ABOVE COMMENTED LINE
 else:
@@ -96,17 +96,17 @@ def collect_data(event):
 	event_year_OGLE = ""
 	event_year_MOA = ""
 	if event.has_key("name_OGLE"):
-		name_OGLE = event["name_OGLE"
+		name_OGLE = event["name_OGLE"]
 		event_year_OGLE = name_OGLE[5:9]
 
 		updated_event.update(collect_data_OGLE(name_OGLE))
-		updated_event.update(collect_data_ARTEMIS(name_OGLE)
+		updated_event.update(collect_data_ARTEMIS(name_OGLE))
 
 	if event.has_key("name_MOA"):
 		name_MOA = event["name_MOA"]
 		event_year_MOA = name_MOA[4:8]
 		updated_event.update(collect_data_MOA(name_MOA))
-		updated_event.update(collect_data_ARTEMIS(name_MOA)
+		updated_event.update(collect_data_ARTEMIS(name_MOA))
 
 	update_year(event_year_OGLE, event_year_MOA)
 
@@ -145,7 +145,7 @@ def update_year(new_year_OGLE, new_year_MOA):
 		#OGLE dir remains unchanged unless event year differs rom the current year
 		if event_year_OGLE != CURRENT_YEAR:
 			global OGLE_dir
-			OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/" + event_year
+			OGLE_dir = "http://ogle.astrouw.edu.pl/ogle4/ews/" + event_year_OGLE
 
 	if new_year_MOA != "":
 		global event_year_MOA
@@ -182,8 +182,8 @@ def collect_data_OGLE(event_name):
 	tau_values = parse_values_OGLE(tau_columns)
 	u0_values = parse_values_OGLE(u0_columns)
 
-	lCurve_plot_URL = OGLE_dir + "/data/" + event_year + "/" + name_URL + "/lcurve.gif"
-	lCurve_plot_zoomed_URL = OGLE_dir + "/data/" + event_year + "/" + name_URL + "/lcurve_s.gif"
+	lCurve_plot_URL = OGLE_dir + "/data/" + event_year_OGLE + "/" + name_URL + "/lcurve.gif"
+	lCurve_plot_zoomed_URL = OGLE_dir + "/data/" + event_year_OGLE + "/" + name_URL + "/lcurve_s.gif"
 
 	values = {"name_OGLE": event_name, "pageURL_OGLE": event_URL, "remarks_OGLE": remarks, \
 								 "tMax_OGLE": tMax_values[0], "tMax_err_OGLE": tMax_values[1], \
@@ -231,6 +231,7 @@ def collect_data_MOA(event_name):
 	if Dec_degrees != "":
 		event_update["Dec_degrees_MOA"] = Dec_degrees
 
+	logger.debug("MOA values: " + str(values_MOA))
 	return event_update
 
 def get_file_data_MOA(event_name):
@@ -246,7 +247,7 @@ def get_file_data_MOA(event_name):
 		survey_data_len = len(survey_data)
 		if survey_data_len < 1:
 			logger.warning("MOA event %s not found in parameter file (located in %s)." % (event_name, MOA_DATA_FILEPATH))
-			logger.warning("Returning empty list as survey file data.".
+			logger.warning("Returning empty list as survey file data.")
 		elif survey_data_len < 4:
 			logger.warning(("MOA event %s data file found (located in %s), " + \
 						   "but there are too few items in the file's first line.") % (event_name, MOA_DATA_FILEPATH))
@@ -297,8 +298,6 @@ def collect_data_MOA_via_ID(ID):
 				  "mag_MOA": mag_values[0], "mag_err_MOA": mag_values[1], \
 				  "lCurve_MOA": lCurve_plot_URL, "RA_MOA": RA, "Dec_MOA": Dec, \
 				  "assessment_MOA": assessment, "remarks_MOA": remarks}
-
-	logger.debug("MOA values: " + str(values_MOA))
 	return values_MOA	
 
 def get_mag_MOA(event_page_soup):
@@ -338,7 +337,7 @@ def collect_data_ARTEMIS(event_name):
 
 	survey_name = event_name.split("-")[0]	
 	
-	if survey_name == "MOA"
+	if survey_name == "MOA":
  		filename = "KB"
 		event_name_short = event_name[4:]
 	elif survey_name == "OGLE":

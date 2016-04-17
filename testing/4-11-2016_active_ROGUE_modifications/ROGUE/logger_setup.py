@@ -31,7 +31,7 @@ def setup(logger_name, log_dir, log_name, log_date_time_format, console_output_o
 		logger.setLevel(logging.DEBUG)
 
 	#set up file handler
-	file_handler = logging.fileHandler(log_filepath) #for file output
+	file_handler = logging.FileHandler(log_filepath) #for file output
 	if console_output_level == "DEBUG":
 		file_handler.setLevel(logging.DEBUG)
 	elif console_output_level == "INFO":

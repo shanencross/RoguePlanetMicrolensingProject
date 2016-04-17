@@ -10,10 +10,15 @@ import logging
 
 import logger_setup
 
+DEBUGGING_MODE = False
+
 LOG_DIR = os.path.join(sys.path[0], "logs/comparison_table_page_output_log")
 LOG_NAME = "comparison_table_page_output_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
-logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
+if DEBUGGING_MODE:
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=True, console_output_level = "DEBUG")
+else:
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
 
 TEST_EVENT_LIST = [{"name_MOA":"MOA-2015-BLG-123", "ID_MOA":"gb19-R-2-7179", "ROGUE trigger":"yes", "TAP trigger":"no"}, \
 				   {"name_OGLE":"OGLE-2015-BLG-0123", "ROGUE trigger":"yes", "TAP trigger":"yes"}, \

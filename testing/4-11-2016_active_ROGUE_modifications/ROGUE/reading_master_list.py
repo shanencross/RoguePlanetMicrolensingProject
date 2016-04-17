@@ -5,7 +5,7 @@ reading_master_list.py
 
 import sys
 import os
-import logger
+import logging
 
 import logger_setup
 import ROGUE
@@ -18,9 +18,14 @@ LOG_DIR = os.path.join(sys.path[0], "logs/reading_master_list_log")
 LOG_NAME = "reading_master_list_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
-	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=True, consoleOutputLevel = "DEBUG")
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=True, console_output_level = "DEBUG")
 else:
-	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, consoleOutputOn=False, consoleOutputLevel = "DEBUG")
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
+
+if DEBUGGING_MODE:
+	EVENT_MASTER_LIST_FILEPATH = os.path.join(sys.path[0], "reading_master_list_folder/reading_master_list")
+else:
+	EVENT_MASTER_LIST_FILEPATH = "/science/robonet/rob/Operations/ExoFOP/master_events_list"
 
 NUM_START_INDEX_OGLE = 14
 YEAR_START_INDEX_OGLE = 5
@@ -45,7 +50,7 @@ def convert_string_to_boolean(string):
 def check_event_master_list(local_events):
 
 	if local_events == None:
-		return None #DEBUG: fix later
+		return #DEBUG: fix later
 
 	local_event_OGLE = local_events["OGLE"]
 	local_event_MOA = local_events["MOA"]
@@ -63,7 +68,7 @@ def check_event_master_list(local_events):
 	logger.debug("Newest MOA number: %s" % (str(local_num_MOA)))
 	logger.debug("Newest MOA year: %s" % (str(local_year_MOA)))
 
-	with open(input_filepath, "r") as masterList:
+	with open(EVENT_MASTER_LIST_FILEPATH, "r") as masterList:
 		for line in masterList:
 			if line[0] == "#":
 				continue

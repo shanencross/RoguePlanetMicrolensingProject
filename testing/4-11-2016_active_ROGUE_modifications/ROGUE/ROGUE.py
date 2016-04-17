@@ -234,7 +234,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 			# Run MOA most-recent-magnitude-without-too-large-of-an-error test
 			mag_values = [event[mag_MOA], event[mag_MOA_err]]
-			if check_mag(mag_values)
+			if check_mag(mag_values):
 				mag_test = "passed"
 			else:
 				mag_test = "failed"
@@ -253,9 +253,9 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		if is_microlensing(assessment_MOA):
 			microlensing_assessment_test = "passed"
 		else:
-			microlensing_assessment_test = "failed
+			microlensing_assessment_test = "failed"
 
-	if event.has_key("in_K2_superstamp")
+	if event.has_key("in_K2_superstamp"):
 		if event["in_K2_superstamp"]:
 			microlensing_region_test = "Passed"
 		else:
