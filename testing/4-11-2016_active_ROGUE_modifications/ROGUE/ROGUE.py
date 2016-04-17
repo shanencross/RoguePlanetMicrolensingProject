@@ -314,7 +314,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		trigger_event(event)
 
 def trigger_event(event):
-	"""Runs when an event fits our critera. Triggers mail notifications and builds summary if those flags are on."""
+	"""Runs when an event fits our criteria. Triggers mail notifications and builds summary if those flags are on."""
 
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_NOTIFICATIONS_ON:
@@ -482,7 +482,7 @@ def get_notification_level_and_message(event):
 	if notification_level == "Warning":
 		message += " at least one of the Einstein Times that passed our criteria has an error smaller than"
 	elif notification_level == "Alert":
-		message += " none of the Einstein Times that passed our critera have an error greater than"
+		message += " none of the Einstein Times that passed our criteria have an error greater than"
 
 	message += " an error threshold of " + str(EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD)
 	message += " day(s), this email has been given the status of \"Event %s\"." % str(notification_level)
