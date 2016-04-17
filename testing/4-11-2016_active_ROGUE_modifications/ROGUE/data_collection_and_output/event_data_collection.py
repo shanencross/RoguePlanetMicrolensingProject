@@ -458,7 +458,7 @@ u0: %s +/-%s\
 """ % (event["name_ARTEMIS_OGLE"], event["tMax_ARTEMIS_OGLE"], event["tMax_err_ARTEMIS_OGLE"], event["tE_ARTEMIS_OGLE"], \
 	   event["tE_err_ARTEMIS_OGLE"], event["u0_ARTEMIS_OGLE"], event["u0_err_ARTEMIS_OGLE"])
 
-	tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "microlensing_alternate_region_test", "mag_test"]
+	tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "microlensing_region_alternate_test", "mag_test"]
 	output_string += \
 """\
 <br>
