@@ -41,8 +41,6 @@ FIELDNAMES_TO_KEEP_ROGUE = []
 FIELDNAMES_TO_KEEP_TAP = []
 """
 
-
-
 def read_ROGUE_table(ROGUE_filepath):
 	delimiter = ","
 
