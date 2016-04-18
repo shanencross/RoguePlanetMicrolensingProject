@@ -52,12 +52,12 @@ if not os.path.exists(LOCAL_EVENTS_DIR):
 	os.makedirs(LOCAL_EVENTS_DIR)
 
 # Set up filepath for .csv file of TAP event triggers
-TAP_DIR = os.path.join(sys.path[0], "TAPtargetTable")
-TAP_FILENAME = "TAPtargetTable.csv"
+TAP_DIR = os.path.join(sys.path[0], "TAP_target_table")
+TAP_FILENAME = "TAP_target_table.csv"
 TAP_FILEPATH = os.path.join(TAP_DIR, TAP_FILENAME)
 
 # Set up filepath for ROGUE vs. TAP comparison table HTML file
-COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparisonTable")
+COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table")
 COMPARISON_TABLE_FILENAME = "ROGUE_vs_TAP_Comparison_Table.html"
 COMPARISON_TABLE_FILEPATH = os.path.join(COMPARISON_TABLE_DIR, COMPARISON_TABLE_FILENAME)
 if not os.path.exists(COMPARISON_TABLE_DIR):
@@ -96,16 +96,17 @@ MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
 EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD = 1 # days - if Einstein Time error is less than this, email is labeled "Event Notification"; 
 										# otherwise email is labeled "Event Warning"
 
-EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "eventTriggerRecord")
-EVENT_TRIGGER_RECORD_FILENAME = "eventTriggerRecord.csv"
+EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "event_trigger_record")
+EVENT_TRIGGER_RECORD_FILENAME = "event_trigger_record.csv"
 EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRIGGER_RECORD_FILENAME)
 if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
 	os.makedirs(EVENT_TRIGGER_RECORD_DIR)
 
 # Fieldnames and delimiter for .csv file storing event triggers
-FIELDNAMES = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
-			  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
-			  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
+FIELDNAMES = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "RA_OGLE", \
+			  "Dec_OGLE", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", "tE_ARTEMIS_OGLE", \
+			  "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", \
+			  "u0_err_ARTEMIS_MOA", "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
 
 DELIMITER = ","
 
@@ -150,8 +151,13 @@ def run_ROGUE():
 	logger.info("Max magnitude error allowed: " + str(MAX_MAG_ERR))
 
 	local_events = get_local_events(LOCAL_EVENTS_FILEPATH)
-	reading_master_list.check_event_master_list(local_events)
+	events_to_evaluate = reading_master_list.check_event_master_list(local_events)
+	
+	for event in events_to_evaluate:
+		evaluate_event(event)
 
+	save_and_compare_triggers()
+	logger.debug(str(event_trigger_dict))
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
 
@@ -425,26 +431,41 @@ def add_event_to_trigger_dict(event):
 	"""Add event data dictionary (dictionary containing separate dictionaries for data from each survey) \
 	to dictionary of event triggers, first converting it to a single event dictionary containing items from all surveys."""
 
-	#event = convert_data_dict(event_data_dict)
+	converted_event = convert_event_for_output(event)
 
 	# Use OGLE name for key pointing to event as value if availble.
-	if event.has_key("name_OGLE") and event["name_OGLE"] != "":
+	if converted_event.has_key("name_OGLE") and converted_event["name_OGLE"] != "":
 		logger.info("Event has OGLE name")
 		name_key = "name_OGLE"
 
 	# Otherwise, use the MOA name.
-	elif event.has_key("name_MOA") and event["name_MOA"] != "":
+	elif converted_event.has_key("name_MOA") and converted_event["name_MOA"] != "":
 		logger.info("Event has MOA name and no OGLE name")
 		name_key = "name_MOA"
 
 	# If there is a neither a MOA nor OGLE name, something has gone wrong, and we abort storing the event.
 	else:
-		logger.warning("Event has neither OGLE nor MOA name item. Event:\n" + str(event))
+		logger.warning("Event has neither OGLE nor MOA name item. Event:\n" + str(converted_event))
 		logger.warning("Aborting added event to event trigger dictionary...")
 		return
 
-	event_name = event[name_key]
-	event_trigger_dict[event_name] = event
+	event_name = converted_event[name_key]
+	global event_trigger_dict
+	event_trigger_dict[event_name] = converted_event
+	logger.debug(str(event_trigger_dict))
+
+def convert_event_for_output(event):
+	"""Return a copy of event dictionary which has all elements removed
+	except those with keys specified by the FIELDNAMES list,
+	which indicates which fields are to be included in .csv record of
+	event triggers."""
+
+	converted_event = {}	
+	for fieldname in FIELDNAMES:
+		if event.has_key(fieldname):
+			converted_event[fieldname] = event[fieldname]
+
+	return converted_event
 
 def save_and_compare_triggers():
 	if EVENT_TRIGGER_RECORD_ON:

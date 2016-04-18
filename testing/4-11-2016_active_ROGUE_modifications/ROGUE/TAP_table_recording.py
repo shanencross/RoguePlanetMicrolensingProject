@@ -71,36 +71,22 @@ def update_table():
 		#print "Working on line:\n" + event.prettify()
 
 		event_lines = event.find_all("td")
-		event_name_full = event_lines[0].string
+		event_name = event_lines[0].string
+		event_RA = event_lines[2].string
+		event_Dec = event_lines[3].string
+		event_exposure_time = event_lines[6].string
 		event_priority = event_lines[7].string
 		event_mag = event_lines[9].string
 		event_tE = event_lines[15].string
 		event_tE_err = event_lines[16].string
-		event_exposure_time = event_lines[6].string
-
-		# obtains both MOA and OGLE names if available with name-conversion function from collectEventData...
-		# But this should be done during generation of the comparison table between my output and Markus's TAP output, I think. 
-		"""
-		surveyPrefix = event_name_full.split("-")[0]
-		event_name = event_name_full[(len(surveyPrefix) + 1):]
-
-		if surveyPrefix == "MOA":
-			event_name_MOA = event_name
-			event_name_OGLE = collectEventData.convert_event_name(event_name, MOAtoOGLE=True)
-		elif surveyPREFIX == "OGLE":
-			event_name_MOA = collectEventData.convert_event_name(event_name, MOAtoOGLE=False)
-			event_name_OGLE = event_name
-		else:
-			logger.warning("Error: Unexpected TAP event name formatting. Name " + event_name_full + "does not have either MOA or OGLE prefix."
-			event_name_MOA = None
-			event_name_OGLE = None
-		"""
 		
-		# Store data as a dictionary of dictionaries. The inner dictionaries are the "events", containing items for each piece of data about the events.
+		# Store data as a dictionary of dictionaries. The inner dictionaries are the "events", 
+		# containing items for each piece of data about the events.
 		# The outer dictionary uses event names as keys, each pointing to an event dictionary as a value.
-		event_dict = {"name_TAP": event_name_full, "priority_TAP": event_priority, "mag_TAP": event_mag, "tE_TAP": event_tE, "tE_err_TAP": event_tE_err, \
-					 "exposureTime_TAP": event_exposure_time}
-		online_TAP_events[event_name_full] = event_dict
+		event_dict = {"name_TAP": event_name, "RA_TAP": event_RA, "Dec_TAP": event_Dec, \
+					  "exposureTime_TAP": event_exposure_time, "priority_TAP": event_priority, \
+					  "mag_TAP": event_mag, "tE_TAP": event_tE, "tE_err_TAP": event_tE_err}
+		online_TAP_events[event_name] = event_dict
 		logger.debug("Obtained event dictionary: %s" % (str(event_dict)))
 	#print "Obtained online TAP table: %s" % (str(online_TAP_events))
 
@@ -114,7 +100,7 @@ def print_online_table():
 
 def save_table():
 	# Column field names for table
-	fieldnames = ["name_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP", "exposureTime_TAP"]
+	fieldnames = ["name_TAP","RA_TAP", "Dec_TAP", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP", "exposureTime_TAP"]
 	delimiter = ","
 	logger.info("Update .csv file with events using update_CSV script...")
 	update_CSV.update(TAP_TARGET_TABLE_OUTPUT_FILEPATH, online_TAP_events, fieldnames=fieldnames, delimiter=delimiter)

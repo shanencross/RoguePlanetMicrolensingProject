@@ -68,6 +68,7 @@ def check_event_master_list(local_events):
 	logger.debug("Newest MOA number: %s" % (str(local_num_MOA)))
 	logger.debug("Newest MOA year: %s" % (str(local_year_MOA)))
 
+	events_to_evaluate = []
 	with open(EVENT_MASTER_LIST_FILEPATH, "r") as masterList:
 		for line in masterList:
 			if line[0] == "#":
@@ -110,7 +111,8 @@ def check_event_master_list(local_events):
 
 				event = {"name_OGLE": name_OGLE, "name_MOA": name_MOA, "in_K2_footprint": in_K2_footprint, \
 							  "in_K2_superstamp": in_K2_superstamp, "during_K2_campaign": during_K2_campaign}
-				ROGUE.evaluate_event(event)			
+				#ROGUE.evaluate_event(event)	
+				events_to_evaluate.append(event)		
 				logger.info("-------------------------------------")
 			
 			if num_OGLE == None and year_OGLE == None \
@@ -124,7 +126,8 @@ def check_event_master_list(local_events):
 
 				event = {"name_MOA": name_MOA, "in_K2_footprint": in_K2_footprint, \
 							  "in_K2_superstamp": in_K2_superstamp, "during_K2_campaign": during_K2_campaign}
-				ROGUE.evaluate_event(event)
+				#ROGUE.evaluate_event(event)
+				events_to_evaluate.append(event)
 				logger.info("-------------------------------------")
 
 			elif num_MOA == None and year_MOA == None \
@@ -138,9 +141,14 @@ def check_event_master_list(local_events):
 				logger.info("No MOA name")
 				event = {"name_OGLE": name_OGLE, "in_K2_footprint": in_K2_footprint, \
 							  "in_K2_superstamp": in_K2_superstamp, "during_K2_campaign": during_K2_campaign}
-				ROGUE.evaluate_event(event)
+				#ROGUE.evaluate_event(event)
+				events_to_evaluate.append(event)
 				logger.info("-------------------------------------")
-	logger.info("Finished checking master list..")	
+	logger.info("Finished checking master list.")
+
+	events_to_evaluate.sort()
+	logger.debug("Events to evaluate: " + str(events_to_evaluate))
+	return events_to_evaluate
 
 def test1():
 	check_file = False

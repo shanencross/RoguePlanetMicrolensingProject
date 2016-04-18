@@ -172,8 +172,8 @@ def collect_data_OGLE(event_name):
 	#logger.debug(str(soup))
 	intro_table = tables[1]
 	intro_table_rows = intro_table.find_all('tr')
-	RA = str(intro_table_rows[2].find_all("td")[1].string).rstrip()
-	Dec = str(intro_table_rows[3].find_all("td")[1].string).rstrip()
+	RA = str(intro_table_rows[2].find_all("td")[1].string).rstrip().lstrip()
+	Dec = str(intro_table_rows[3].find_all("td")[1].string).rstrip().lstrip()
 	remarks = str(intro_table_rows[4].find_all("td")[1].string)
 	#remarks = str(soup.find(string="Remarks       ").next_element.string)
 	
@@ -215,19 +215,19 @@ def collect_data_MOA(event_name):
 	
 	file_data_MOA_len = len(file_data_MOA)
 	if file_data_MOA_len > 1:
-		ID = file_data_MOA[1].rstrip()
+		ID = file_data_MOA[1].rstrip().strip()
 	else:
 		logger.warning("Cannot obtain MOA ID. Data list length is %s, which is < 2. Expected ID at position 1." % file_data_MOA_len)
 		ID = ""
 
 	if file_data_MOA_len > 2:
-		RA_degrees = file_data_MOA[2].rstrip()
+		RA_degrees = file_data_MOA[2].rstrip().lstrip()
 	else:
 		logger.warning("Cannot obtain RA in degrees. Data list length is %s, which is < 3. Expected RA at position 2." % file_data_MOA_len)
 		RA_degrees = ""
 
 	if file_data_MOA_len > 3:
-		Dec_degrees = file_data_MOA[3].rstrip()
+		Dec_degrees = file_data_MOA[3].rstrip().lstrip()
 	else:
 		logger.warning("Cannot obtain Dec in degrees. Data list length is %s, which is < 4. Expected Dec at position 3." % file_data_MOA_len)
 		Dec_degrees = ""
@@ -296,8 +296,8 @@ def collect_data_MOA_via_ID(ID):
 		mag = mag_values[0]
 		mag_err = mag_values[1]
 	
-	RA = (soup.find(string="RA:").next_element.string).rstrip()
-	Dec = (soup.find(string="Dec:").next_element.string).rstrip()
+	RA = (soup.find(string="RA:").next_element.string).rstrip().lstrip()
+	Dec = (soup.find(string="Dec:").next_element.string).rstrip().lstrip()
 	assessment = soup.find(string="Current assessment:").next_element.string
 	remarks = str(soup.find_all("table")[1].find("td").string)
 
@@ -371,8 +371,8 @@ def collect_data_ARTEMIS(event_name):
 		logger.debug("Opened ARTEMIS file.")
 		line = file.readline()
 	entries = line.split()
-	RA = (entries[0]).rstrip()
-	Dec = (entries[1]).rstrip()
+	RA = (entries[0]).rstrip().lstrip()
+	Dec = (entries[1]).rstrip().lstrip()
 	t0 = float(entries[3]) + 2450000.0 #UTC(?)
 	t0_err = float(entries[4])
 	tE = float(entries[5]) #days
@@ -485,6 +485,41 @@ Tests:\
 #</form>\
 #"""
 	return output_string
+
+def convert_event_name(event_name_initial):
+	"""Convert event name form MOA to OGLE or vice versa using MOA to OGLE index form MOA website."""
+
+	cross_reference_URL = MOA_dir + "/moa2ogle.txt"
+	cross_reference_request = requests.get(cross_reference_URL, verify=False)
+	crossReference = cross_reference_request.content.splitlines()
+
+	survey = event_name_initial.split("-")[0]
+	if survey == "MOA":
+		initial_survey = "MOA"
+		final_survey = "OGLE"
+	elif survey == "OGLE":
+		initial_survey = "OGLE"
+		final_survey = "MOA"
+	else:
+		logger.warning("Event name does not have MOA or OGLE prefix (e.g. \"MOA-2016-BLG-123\").")
+		logger.warning("Event must have survey prefix. Returning None for name conversion.")
+		return None
+
+	event_name_final = ""
+	for line in reversed(crossReference):
+		if line[0] != "#":
+			lineSplit = line.split()
+			if lineSplit[0] == event_name_initial:
+				event_name_final = lineSplit[2]
+				break
+			if lineSplit[2] == event_name_initial:
+				event_name_final = lineSplit[0]
+				break
+	if event_name_final == "":
+		return None
+	else:
+		logger.debug(initial_survey + " to " + final_survey + " converted name: " + str(event_name_final))
+		return event_name_final
 
 def test1():
 	pass

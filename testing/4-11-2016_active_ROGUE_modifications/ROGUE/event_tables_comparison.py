@@ -28,6 +28,21 @@ TEST_TAP_FILENAME = "TAP_target_table.csv"
 TEST_TAP_FILEPATH = os.path.join(TEST_TAP_DIR, TEST_TAP_FILENAME)
 TEST_COMPARISON_PAGE_FILEPATH = "comparison_table_page_test.html"
 
+"""
+# By default, all fieldnames but those specified here will be included in comparison table
+FIELDNAMES_TO_REMOVE_ROGUE = []
+FIELDNAMES_TO_REMOVE_TAP = []
+
+# If one of these flag is on, the corresponding list above is ignored, and only the fieldnames
+# specified in the corresponding list below are included in the comparison table
+KEEP_ONLY_CERTAIN_FIELDNAMES_ROGUE = False
+KEEP_ONLY_CERTAIN_FIELDNAMES_TAP = False
+FIELDNAMES_TO_KEEP_ROGUE = []
+FIELDNAMES_TO_KEEP_TAP = []
+"""
+
+
+
 def read_ROGUE_table(ROGUE_filepath):
 	delimiter = ","
 
@@ -112,19 +127,16 @@ def read_TAP_table(TAP_filepath):
 # Name parameter format: "MOA-2016-BLG-123"
 # Assume event is a MOA event
 # Convert full MOA name to full OGLE name if available; otherwise return original full MOA name
-def get_comparison_name(event_name_full):
-	# Get the shortened event name witout survey prefix, e.g. MOA-2016-BLG-123 shortens to 2016-BLG-123
-	event_name_short = event_name_full[4:]
-
-	# Pass shortened name to MOA-to-OGLE conversion function, which returns None if there is no conversion counterpart
-	event_name_converted_short = event_data_collection.convert_event_name(event_name_full, MOAtoOGLE=True)
+def get_comparison_name(event_name):
+	# Pass name to MOA-to-OGLE conversion function, which returns None if there is no conversion counterpart
+	event_name_converted = event_data_collection.convert_event_name(event_name)
 	
 	# If the event had no conversion counterpart, return the original full name unchanged as the comparison
-	if event_name_converted_short == None:
-		comparison_name = event_name_full
+	if event_name_converted == None:
+		comparison_name = event_name
 	# If the event was converted, construct the full name for the new converted name and return that as the comparison name
 	else:
-		comparison_name = "OGLE-" + event_name_converted_short
+		comparison_name = event_name_converted
 	
 	return comparison_name
 
@@ -138,6 +150,7 @@ def compare_tables(ROGUE_filepath, TAP_filepath):
 	return combined_events_list
 
 def compare_event_dicts(ROGUE_events, TAP_events):
+
 	# Create combined set of all event names in ROGUE and TAP events
 	combined_event_names_set = ROGUE_events.viewkeys() | TAP_events.viewkeys()
 	
@@ -156,8 +169,20 @@ def compare_event_dicts(ROGUE_events, TAP_events):
 		# get event from ROGUE list if available, else get it from TAP list
 		if in_ROGUE:
 			event = ROGUE_events[event_name]
+			"""
+			if KEEP_ONLY_CERTAIN_FIELDNAMES_ROGUE:
+				keep_only_certain_fieldnames(event, FIELDNAMES_TO_KEEP_ROGUE)
+			else:
+				remove_fieldnames(event, FIELDNAMES_TO_REMOVE_ROGUE)
+			"""
 		elif in_TAP:
 			event = TAP_events[event_name]
+			"""
+			if KEEP_ONLY_CERTAIN_FIELDNAMES_TAP:
+				keep_only_certain_fieldnames(event, FIELDNAMES_TO_KEEP_TAP)
+			else:
+				remove_fieldnames(event, FIELDNAMES_TO_REMOVE_TAP)
+			"""
 		else:
 			logger.warning("Error: event %s not found in either ROGUE or TAP output" % event_name)
 			continue
@@ -170,7 +195,14 @@ def compare_event_dicts(ROGUE_events, TAP_events):
 		if in_ROGUE and in_TAP:
 			event.update(TAP_events[event_name])
 
-		# add properly modified to ordered list of combined event
+		# If event is from TAP alone and has an OGLE comparison name, it does not contain MOA values
+		# even if they are available.
+		# So we obtain the MOA and/or OGLE values, depending on what is available, and update the event
+		# dictionary with them.
+		if in_TAP and not in_ROGUE:
+			update_TAP_only_event(event)
+
+		# add properly modified event to ordered list of combined event
 		# dictionaries
 		combined_events_list.append(event)
 
@@ -189,6 +221,79 @@ def compare_event_dicts(ROGUE_events, TAP_events):
 	"""
 
 	return combined_events_list
+
+def update_TAP_only_event(event):
+	"""Update TAP only event with data from survey(s) and/or ARTEMIS."""
+
+	# Collect OGLE data if available
+	if event.has_key("name_OGLE"):
+		logger.debug("Obtaining OGLE data for TAP event...")
+		try:
+			event_update_OGLE = event_data_collection.collect_data_OGLE(event["name_OGLE"])
+			event.update(event_update_OGLE)
+			logger.debug("OGLE data retrieved.")
+		except Exception as ex:
+			logger.warning("Exception obtaining OGLE data for TAP event.")
+			logger.warning(ex)
+
+		logger.debug("Obaining ARTEMIS OGLE data for TAP event...")
+		try:
+			event_update_ARTEMIS_OGLE = event_data_collection.collect_data_ARTEMIS(event["name_OGLE"])
+			event.update(event_update_ARTEMIS_OGLE)
+			logger.debug("ARTEMIS OGLE data retrieved.")
+		except Exception as ex:
+			logger.warning("Exception obtaining ARTEMIS OGLE data for TAP event.")
+
+		# Needs this because we don't check OGLE events for corresponding MOA events
+		# in the TAP file. Conversely, a MOA event will always have an OGLE name key
+		# if available.
+		try:
+			name_MOA = event_data_collection.convert_event_name(event["name_OGLE"])
+			if name_MOA != None:
+				event["name_MOA"] = name_MOA
+		except Exception as ex:
+			logger.warning("Exception converting event name from OGLE to MOA.")
+			logger.warning(ex)
+
+	# Collect MOA data if available
+	if event.has_key("name_MOA"):
+		logger.debug("Obtaining MOA data for TAP event...")		
+		try:
+			event_update_MOA = event_data_collection.collect_data_MOA(event["name_MOA"])
+			event.update(event_update_MOA)
+			logger.debug("MOA data retrieved.")
+		except Exception as ex:
+			logger.warning("Exception obtaining MOA data for TAP event.")
+
+		logger.debug("Obtaining ARTEMIS MOA data for TAP event...")
+		try:
+			event_update_ARTEMIS_MOA = event_data_collection.collect_data_ARTEMIS(event["name_MOA"])
+			event.update(event_update_ARTEMIS_MOA)
+			logger.debug("ARTEMIS MOA data retrieved.")
+		except Exception as ex:
+			logger.warning("Exception obtaining ARTEMIS MOA data for TAP event.")
+
+"""
+def remove_fieldnames(event, fieldnames_to_remove):
+	# Remove specified fieldnames from event dictionary. 
+	# Allows us to omit columns from .csv files that we don't want to include on table.
+
+	for fieldname in fieldnames_to_remove:
+		if event.has_key(fieldname):
+			del event[fieldname]
+
+def keep_only_certain_fieldnames(event, fieldnames_to_keep):
+	# Remove all fieldnames except a certain set of fieldnames.
+	# Allows us to specify exactly which columns from the .csv file
+	# we wish to include.
+
+	trimmed_event = {}
+	for fieldname in fieldnames_to_remove:
+		if event.has_key(fieldname):
+			trimmed_event = event[fieldname]
+
+	event = trimmed_event
+"""
 
 def compare_and_output(ROGUE_filepath, TAP_filepath, comparison_page_filepath):
 	logger.info("------------------------------------------------------------------------------")
