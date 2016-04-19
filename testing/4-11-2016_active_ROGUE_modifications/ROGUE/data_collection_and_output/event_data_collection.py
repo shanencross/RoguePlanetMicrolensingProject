@@ -233,7 +233,7 @@ def collect_data_MOA(event_name):
 		Dec_degrees = ""
 
 	logger.debug("Collecting MOA data from event survey page using MOA ID...")
-	event_update = collect_data_MOA_via_ID(ID)
+	event_update = collect_data_MOA_via_ID(event_name, ID)
 
 	if ID != "":
 		event_update["ID_MOA"] = ID
@@ -242,18 +242,22 @@ def collect_data_MOA(event_name):
 	if Dec_degrees != "":
 		event_update["Dec_degrees_MOA"] = Dec_degrees
 
-	logger.debug("MOA values: " + str(values_MOA))
+	#logger.debug("MOA values: " + str(values_MOA))
 	return event_update
 
 def get_file_data_MOA(event_name):
 	with open(MOA_DATA_FILEPATH, "r") as MOA_file:
 		survey_data = []
-		for line in MOA_file.read():
+		for line in MOA_file:
+			if line[0] == "#":
+				continue
+
 			line_split = line.split()
 			line_event_name = line_split[0]
 			
 			if line_event_name == event_name:
-				survey_data = line_split()	
+				survey_data = line_split
+				logger.debug("Acquired survey data: %s" % str(survey_data))
 
 		survey_data_len = len(survey_data)
 		if survey_data_len < 1:
@@ -267,7 +271,7 @@ def get_file_data_MOA(event_name):
 
 		return survey_data
 
-def collect_data_MOA_via_ID(ID):
+def collect_data_MOA_via_ID(event_name, ID):
 	name_URL = MOA_dir + "/display.php?id=" + ID
 	request = requests.get(name_URL, verify=False)
 	page = request.content
@@ -521,11 +525,13 @@ def convert_event_name(event_name_initial):
 		logger.debug(initial_survey + " to " + final_survey + " converted name: " + str(event_name_final))
 		return event_name_final
 
-def test1():
-	pass
+def convert_event_name_test():
+	convert_event_name("MOA-2016-BLG-181")
+	convert_event_name("OGLE-2016-BLG-0722")
+
 
 def main():
-	test1()
+	convert_event_name_test()
 
 if __name__ == "__main__":
 	main()

@@ -244,7 +244,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 			assessment_MOA = event["assessment_MOA"]
 
 			# Run MOA most-recent-magnitude-without-too-large-of-an-error test
-			mag_values = [event[mag_MOA], event[mag_MOA_err]]
+			mag_values = [event["mag_MOA"], event["mag_err_MOA"]]
 			if check_mag(mag_values):
 				mag_test = "passed"
 			else:
@@ -276,6 +276,8 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		else:
 			microlensing_assessment_test = "failed"
 
+	# DEBUG: SOMETHING IS WRONG, WARNING, ERROR. Sometimes (always?) event doesn't have superstamp key in dictionary??
+	# Or something else? Somehow, microlensing_region_test is winding up as "untested."
 	if event.has_key("in_K2_superstamp"):
 		if event["in_K2_superstamp"]:
 			microlensing_region_test = "passed"
@@ -284,7 +286,17 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	
 	#DEBUG: Testing agreement with using K2 superstamp test ourselves, instead of relying on master list
 	if DEBUGGING_MODE:
+		microlensing_region_disagreement = False
+		
+		"""There is a disagreement between the two microlensiong region tests if
+		they have different results and at least one of them has passed (ruling out the case where one
+		is untested and the other has failed, which should not count as a disagreement)"""
 		if microlensing_region_test != microlensing_region_alternate_test:
+			if microlensing_region_test == "passed" or microlensing_region_alternate_test == "passed":
+				microlensing_disagreement = True
+		
+		# If there is a disagreement, log information about it.
+		if microlensing_region_disagreement:
 			logger.warning("There is disagreement about the test for whether the event is in the K2 superstamp.")
 			logger.warning("The test which uses the K2fov module, evaluating the RA and Dec from MOA, says that the event:")
 			if microlensing_region_alternate_test == "passed":
@@ -385,7 +397,7 @@ def check_microlens_region(RA_string, Dec_string):
 	logger.info("RA: " + str(RA) + "      Dec: " + str(Dec) + "      (Units: Degrees)")
 
 	# pass to K2fov.c9 module method (from the K2 tools) to get whether coordinates are in the region
-	return in_microlens_region(RA, Dec)
+	return inMicrolensRegion(RA, Dec)
 
 def get_event_page_soup_MOA(values_MOA):
 	"""Return event page Soup from inital MOA values (must contain MOA ID at least). 

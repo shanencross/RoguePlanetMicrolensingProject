@@ -28,6 +28,8 @@ TEST_TAP_FILENAME = "TAP_target_table.csv"
 TEST_TAP_FILEPATH = os.path.join(TEST_TAP_DIR, TEST_TAP_FILENAME)
 TEST_COMPARISON_PAGE_FILEPATH = "comparison_table_page_test.html"
 
+UPDATE_TAP_EVENT_WITH_SURVEY_DATA = True
+
 """
 # By default, all fieldnames but those specified here will be included in comparison table
 FIELDNAMES_TO_REMOVE_ROGUE = []
@@ -109,8 +111,12 @@ def read_TAP_table(TAP_filepath):
 			# Also add name value to MOA name key,
 			# and to OGLE name key if event is OGLE after attempting conversion
 			elif initial_event_name[:3] == "MOA":
-				row["name_MOA"] = initial_event_name
-				final_event_name = get_comparison_name(initial_event_name)
+				# TAP MOA events are stored with 4-digit event numbers (e.g. MOA-2016-BLG-0123),
+				# but they are listed with 3 digits in most contexts, so we convert them to
+				# 3-digit event number strings (e.g. MOA-2016-BLG-123)
+				name_MOA = convert_TAP_MOA_numbering(initial_event_name)
+				row["name_MOA"] = name_MOA
+				final_event_name = get_comparison_name(name_MOA)
 				if final_event_name[:4] == "OGLE":
 					row["name_OGLE"] = final_event_name
 			else:
@@ -121,6 +127,17 @@ def read_TAP_table(TAP_filepath):
 			TAP_events[final_event_name] = row
 
 		return TAP_events
+
+def convert_TAP_MOA_numbering(event_name):
+	"""Converts MOA name with a 4-digit event number (e.g. MOA-2016-BLG-0123)
+	to a MOA name with a 3-digit event number (e.g. MOA-2016-BLG-123).
+	TAP MOA names are stored with 4 digits, but elsewhere 3 digits are used."""
+
+	name_base = event_name[:13]
+	name_number = float(event_name[13:])
+	name_number_str = "%03d" % name_number
+	name_MOA = name_base + name_number_str
+	return name_MOA
 
 # Name parameter format: "MOA-2016-BLG-123"
 # Assume event is a MOA event
@@ -197,7 +214,7 @@ def compare_event_dicts(ROGUE_events, TAP_events):
 		# even if they are available.
 		# So we obtain the MOA and/or OGLE values, depending on what is available, and update the event
 		# dictionary with them.
-		if in_TAP and not in_ROGUE:
+		if in_TAP and not in_ROGUE and UPDATE_TAP_EVENT_WITH_SURVEY_DATA:
 			update_TAP_only_event(event)
 
 		# add properly modified event to ordered list of combined event
@@ -224,7 +241,7 @@ def update_TAP_only_event(event):
 	"""Update TAP only event with data from survey(s) and/or ARTEMIS."""
 
 	# Collect OGLE data if available
-	if event.has_key("name_OGLE"):
+	if event.has_key("name_OGLE") and event["name_OGLE"] != "":
 		logger.debug("Obtaining OGLE data for TAP event...")
 		try:
 			event_update_OGLE = event_data_collection.collect_data_OGLE(event["name_OGLE"])
@@ -238,13 +255,14 @@ def update_TAP_only_event(event):
 		try:
 			event_update_ARTEMIS_OGLE = event_data_collection.collect_data_ARTEMIS(event["name_OGLE"])
 			event.update(event_update_ARTEMIS_OGLE)
-			logger.debug("ARTEMIS OGLE data retrieved.")
+			if event_update_ARTEMIS_OGLE != {}:
+				logger.debug("ARTEMIS OGLE data retrieved.")
 		except Exception as ex:
 			logger.warning("Exception obtaining ARTEMIS OGLE data for TAP event.")
 
 		# Needs this because we don't check OGLE events for corresponding MOA events
-		# in the TAP file. Conversely, a MOA event will always have an OGLE name key
-		# if available.
+		# when reading in the TAP file. Conversely, a MOA event will always have an 
+		# OGLE name key if available.
 		try:
 			name_MOA = event_data_collection.convert_event_name(event["name_OGLE"])
 			if name_MOA != None:
@@ -254,7 +272,7 @@ def update_TAP_only_event(event):
 			logger.warning(ex)
 
 	# Collect MOA data if available
-	if event.has_key("name_MOA"):
+	if event.has_key("name_MOA") and event["name_MOA"] != "":
 		logger.debug("Obtaining MOA data for TAP event...")		
 		try:
 			event_update_MOA = event_data_collection.collect_data_MOA(event["name_MOA"])
@@ -267,7 +285,8 @@ def update_TAP_only_event(event):
 		try:
 			event_update_ARTEMIS_MOA = event_data_collection.collect_data_ARTEMIS(event["name_MOA"])
 			event.update(event_update_ARTEMIS_MOA)
-			logger.debug("ARTEMIS MOA data retrieved.")
+			if event_update_ARTEMIS_MOA != {}:
+				logger.debug("ARTEMIS MOA data retrieved.")
 		except Exception as ex:
 			logger.warning("Exception obtaining ARTEMIS MOA data for TAP event.")
 
