@@ -451,7 +451,7 @@ def trigger_event(event):
 
 		logger.info("Saving current event dictionary to file...")
 		try:
-			save_triggers(event_trigger_dict)
+			save_triggers()
 		except Exception as ex:
 			logger.warning("Exception attempting to save event triggers so far to event trigger record file.")
 			logger.warning(ex)

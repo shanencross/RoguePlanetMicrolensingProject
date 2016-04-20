@@ -99,19 +99,16 @@ def check_event_master_list(local_events):
 
 #			if num_OGLE != None and num_OGLE > local_num_OGLE and year_OGLE != None and year_OGLE >= local_year_OGLE \
 #			and num_MOA != None and num_MOA > local_num_MOA and year_MOA != None and year_MOA >= local_year_MOA:
-		
 
 			if num_OGLE != None and year_OGLE != None and num_MOA != None and year_MOA != None \
-			and ((num_MOA > local_num_MOA and year_MOA >= local_year_MOA) or (num_OGLE > local_num_OGLE and year_OGLE >= local_year_OGLE)):
+			and ((num_MOA > local_num_MOA and year_MOA >= local_year_MOA) or (num_OGLE > local_num_OGLE and year_OGLE >= local_year_OGLE)):		
 			# exoFOP: has both OGLE and MOA numbers/years.			
 			# Either: 
 				# OGLE number is greater than stored OGLE number.
 				# OGLE year is as or more recent than stored OGLE year.
 			# OR:
 				# MOA number is greater than stored MOA number.
-				# MOA year is as or more recent than stored MOA year.
-
-				pring ("ding")
+				# MOA year is as or more recent than stored MOA year.")
 				logger.debug("%s ? %s" % (num_OGLE, local_num_OGLE))
 				logger.debug("%s ? %s" % (year_OGLE, local_year_OGLE))
 
