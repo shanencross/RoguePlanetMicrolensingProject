@@ -327,12 +327,12 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	if event.has_key("passing_tE_sources"):
 		event["passing_tE_sources"].sort()
 		passing_tE_sources = event["passing_tE_sources"]
-		passing_tE_sources_output = "Passing tE sources: "
+		passing_tE_sources_output = "Sources of passing tE values: "
 		for i in xrange(len(passing_tE_sources)):
 			passing_tE_sources_output += passing_tE_sources[i]
 			if i < len(passing_tE_sources) - 1:
 				passing_tE_sources_output += ", "
-		logger.debug("Sources of passing tE values: %s" % (str(passing_tE_sources_output)))
+		logger.debug(passing_tE_sources_output)
 
 	if assessment_MOA != "":
 		if is_microlensing(assessment_MOA):
