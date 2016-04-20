@@ -175,8 +175,8 @@ def run_ROGUE():
 		evaluate_event(event)
 	
 	logger.debug("Event trigger dictionary: %s" % str(event_trigger_dict))
-	if event_trigger_dict:
-		save_and_compare_triggers()
+	if event_trigger_dict and EVENT_TRIGGER_RECORD_ON:
+		compare_triggers()
 	#logger.debug(str(event_trigger_dict))
 
 	# Save record of the newest OGLE event and newest MOA event
@@ -190,7 +190,6 @@ def run_ROGUE():
 		logger.warning("An exception occurred somewhere in the program's execution.")
 		logger.warning("Not saving newest MOA event or newest OGLE event to file.")
 		logger.warning("This set of new events should be evaluated again upon the program's next iteration.")
-		logger.warning("Duplicate mail alerts may occur.")
 		# NOTE: SHOULD ADD CHECK ON MAIL ALERTS FOR WHETHER ALERT HAS BEEN SENT BEFORE OR NOT
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
@@ -417,6 +416,7 @@ def trigger_event(event):
 	"""Runs when an event fits our criteria. Triggers mail notifications and builds summary if those flags are on."""
 
 	global update_local_events
+	record_trigger = True
 
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_NOTIFICATIONS_ON:
@@ -424,9 +424,12 @@ def trigger_event(event):
 		try:
 			send_mail_notification(event)
 		except Exception as ex:
-			logger.warning("Exception attempting to mail event notification")
+			logger.warning("Exception attempting to build and send mail event notification")
 			logger.warning(ex)
 			update_local_events = False
+			# Don't record the trigger if the mail was not sent
+			record_trigger = False
+			
 
 	if SUMMARY_BUILDER_ON:
 		logger.info("Building and outputting event summary page...")
@@ -437,14 +440,21 @@ def trigger_event(event):
 			logger.warning(ex)
 			update_local_events = False
 
-	if EVENT_TRIGGER_RECORD_ON:
-		logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later...")
+	if EVENT_TRIGGER_RECORD_ON and record_trigger:
+		logger.info("Saving event dictionary to dictionary of event dictionaries...")
 		try:
 			add_event_to_trigger_dict(event)
 		except Exception as ex:
 			logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
 			logger.warning(ex)
 			update_local_events = False
+
+		logger.info("Saving current event dictionary to file...")
+		try:
+			save_triggers(event_trigger_dict)
+		except Exception as ex:
+			logger.warning("Exception attempting to save event triggers so far to event trigger record file.")
+			logger.warning(ex)
 
 def check_einstein_time(tE_string, tE_err_string=None):
 	"""Check if Einstein time is short enough for observation."""
@@ -566,29 +576,40 @@ def convert_event_for_output(event):
 
 	return converted_event
 
+"""
 def save_and_compare_triggers():
-	global update_local_events
 	if EVENT_TRIGGER_RECORD_ON:
-		logger.info("Outputting event to .csv record of event triggers...")
-		try:
-			update_CSV.update(EVENT_TRIGGER_RECORD_FILEPATH, event_trigger_dict, fieldnames=FIELDNAMES, delimiter=DELIMITER)
-		except Exception as ex:
-			logger.warning("Exception outputting .csv record of event triggers")
-			logger.warning(ex)
-			update_local_events = False
-			return
+		save_triggers()
 
 		if EVENT_TABLE_COMPARISON_ON:
-			logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
-			try:
-				event_tables_comparison.compare_and_output(EVENT_TRIGGER_RECORD_FILEPATH, TAP_FILEPATH, COMPARISON_TABLE_FILEPATH)
-			except Exception as ex:
-				logger.warning("Exception generating/outputting comparison table HTML page")
-				logger.warning(ex)
-				update_local_events = False
+			compare_triggers()
+"""
+
+def save_triggers():
+	global update_local_events
+
+	logger.info("Outputting event to .csv record of event triggers...")
+	try:
+		update_CSV.update(EVENT_TRIGGER_RECORD_FILEPATH, event_trigger_dict, fieldnames=FIELDNAMES, delimiter=DELIMITER)
+	except Exception as ex:
+		logger.warning("Exception outputting .csv record of event triggers")
+		logger.warning(ex)
+		update_local_events = False
+		return
+
+def compare_triggers():
+	global update_local_events
+
+	logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
+	try:
+		event_tables_comparison.compare_and_output(EVENT_TRIGGER_RECORD_FILEPATH, TAP_FILEPATH, COMPARISON_TABLE_FILEPATH)
+	except Exception as ex:
+		logger.warning("Exception generating/outputting comparison table HTML page")
+		logger.warning(ex)
+		update_local_events = Fals
 
 def get_notification_level_and_message(event):
-	"""Return notification level as "Warning" or "notification" and related message depending on whether tE error exceeds our threshold constant""" 
+	"""Return notification level as "Warning" or "notification" and related message depending on whether tE error exceeds our threshold constant.""" 
 
 	if not event.has_key("passing_tE_sources"):
 		logger.warning("This event has no recorded passing tE sources (i.e. MOA, OGLE, ARTEMIS_MOA, or ARTEMIS_OGLE).")
@@ -602,10 +623,10 @@ def get_notification_level_and_message(event):
 			notification_level = "Alert"
 
 	message = "Because"
-	if notification_level == "Warning":
-		message += " at least one of the Einstein Times that passed our criteria has an error smaller than"
-	elif notification_level == "Alert":
-		message += " none of the Einstein Times that passed our criteria have an error greater than"
+	if notification_level == "Alert":
+		message += " at least one of the Einstein times that passed our criteria has an error smaller than or equal to"
+	elif notification_level == "Warning":
+		message += " each of the Einstein times that passed our criteria has an error greater than"
 
 	message += " an error threshold of " + str(EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD)
 	message += " day(s), this email has been given the status of \"Event %s\"." % str(notification_level)
@@ -615,10 +636,32 @@ def get_notification_level_and_message(event):
 	return notification_dict
 
 def check_if_event_has_been_mailed_before(event):
-	pass
+	
+	# If there is no trigger record yet, the event has not been mailed before
+	if not os.path.exists(EVENT_TRIGGER_RECORD_FILEPATH):
+		return False
+
+	logger.info("Checking event trigger record for whether a mail notification has been triggered for this event previously...")
+	with open(EVENT_TRIGGER_RECORD_FILEPATH, "r") as event_trigger_record_file:
+			logger.info("Event trigger record opened for reading.")
+			reader = csv.DictReader(event_trigger_record_file, delimiter=DELIMITER)
+			for row in reader:
+				if event.has_key("name_OGLE") and row.has_key("name_OGLE") and event["name_OGLE"] == row["name_OGLE"]:
+					logger.warning("Event %s already found in event trigger record." % event["name_OGLE"])
+					return True
+
+				if event.has_key("name_MOA") and row.has_key("name_MOA") and event["name_MOA"] == row["name_MOA"]:
+					logger.warning("Event %s already found in event trigger record." % event["name_MOA"])
+					return True
+
+			# If there is no match found, event alert has not been sent before
+			logger.info("No record of this event having triggered a previous mail notification found.")
+			return False
+				
+				
 
 def send_mail_notification(event):
-	if check_if_event_has_been_mailed_before_(event):
+	if check_if_event_has_been_mailed_before(event):
 		logger.warning("Event has already been mailed before.")
 		logger.warning("Aborting mail notification.")
 		logger.debug("Event that had been mailed before: %s" % str(event))
@@ -714,9 +757,15 @@ Tests:
 """\
 %s status: %s
 """ % (test, event[test])
-		
-	mail_notification.send_notification(message_text, mail_subject, MAILING_LIST)
-	logger.info(message_text)
+
+	logger.debug("Mail notification text:\n%s" % message_text)
+	try:
+		mail_notification.send_notification(message_text, mail_subject, MAILING_LIST)
+	except Exception as ex:
+		logger.warning("Exception attempting to send mail notification.")
+		logger.warning(ex)
+		raise		
+
 	logger.info("Event notification mailed!")
 
 def main():

@@ -24,12 +24,16 @@ def update(file_output_path, new_dict, fieldnames, delimiter=","):
 	# if csv file does NOT yet exist, open it for writing, sort the online events by name, and store each event dictionary
 	# as a row in this sequence
 	logger.info("-------------------------------------------------------------------------------------")
+	if new_dict == {}:	
+		logger.warning("Dictionary is empty. Aborting update of CSV file.")
+		return
+
 	if not os.path.isfile(file_output_path):
 		logger.info("File does not exist. Opening file for writing...")
-		with open(file_output_path, "w") as f:
+		with open(file_output_path, "w") as output_file:
 			logger.info("File opened for writing.")
 			logger.info("Writing file header...")
-			writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
+			writer = csv.DictWriter(output_file, fieldnames=fieldnames, delimiter=delimiter)
 			writer.writeheader()
 			new_name_list = sorted(new_dict)
 			logger.debug("Sorted online events: " + str(new_name_list))
@@ -44,9 +48,9 @@ def update(file_output_path, new_dict, fieldnames, delimiter=","):
 	# Store the updated online event dictionary when its available, else keep the local dictionary.
 	else: 
 		logger.info("File already exists. Opening file for reading...")
-		with open(file_output_path, "r") as f:
+		with open(file_output_path, "r") as output_file:
 			logger.info("File opened for reading.")
-			reader = csv.DictReader(f, delimiter=delimiter)
+			reader = csv.DictReader(output_file, delimiter=delimiter)
 			
 			# get dictionary with names as keys and event dictionaries as values for locally stored events
 			old_dict ={}
