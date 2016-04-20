@@ -45,8 +45,8 @@ else:
 	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
 
 # set up filepath and directory for local copy of newest microlensing event
-LOCAL_EVENTS_FILENAME = "last_event.txt"
-LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_event")
+LOCAL_EVENTS_FILENAME = "last_events.txt"
+LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_events")
 LOCAL_EVENTS_FILEPATH = os.path.join(LOCAL_EVENTS_DIR, LOCAL_EVENTS_FILENAME)
 if not os.path.exists(LOCAL_EVENTS_DIR):
 	os.makedirs(LOCAL_EVENTS_DIR)
@@ -93,6 +93,8 @@ MAX_EINSTEIN_TIME = 10 # days - only check events as short or shorter than this
 MIN_MAG = 17.5 # magnitude units - only check events as bright or brighter than this
 			   # (i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
+				  # NOTE: A global variable of the same name in event_data_collections
+			      # needs to be changed in event_data_collection too if you want consistnecy
 EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD = 1 # days - if Einstein Time error is less than this, email is labeled "Event Notification"; 
 										# otherwise email is labeled "Event Warning"
 
@@ -150,18 +152,36 @@ def run_ROGUE():
 	logger.info("Dimmest magnitude allowed: " + str(MIN_MAG))
 	logger.info("Max magnitude error allowed: " + str(MAX_MAG_ERR))
 
-	local_events = get_local_events(LOCAL_EVENTS_FILEPATH)
-	events_to_evaluate = reading_master_list.check_event_master_list(local_events)
-	
+	newest_local_events = get_newest_local_events(filepath=LOCAL_EVENTS_FILEPATH)
+	events_to_evaluate = reading_master_list.check_event_master_list(newest_local_events)
+	logger.info("Events to evaluate:")
+	for event in events_to_evaluate:
+		if event.has_key("name_OGLE"):
+			name_OGLE = event["name_OGLE"]
+		else:
+			name_OGLE = "N/A"
+
+		if event.has_key("name_MOA"):
+			name_MOA = event["name_MOA"]
+		else:
+			name_MOA = "N/A"
+
+		logger.info("Event Name (OGLE): %s, Event Name (MOA): %s" % (name_OGLE, name_MOA))
+
 	for event in events_to_evaluate:
 		evaluate_event(event)
 
-	save_and_compare_triggers()
-	logger.debug(str(event_trigger_dict))
+	newest_events = get_newest_events(events_to_evaluate, newest_local_events)	
+	save_newest_events(newest_events, filepath=LOCAL_EVENTS_FILEPATH)
+	
+	logger.debug("Event trigger dictionary: %s" % str(event_trigger_dict))
+	if event_trigger_dict:
+		save_and_compare_triggers()
+	#logger.debug(str(event_trigger_dict))
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
 
-def get_local_events(filepath):
+def get_newest_local_events(filepath=LOCAL_EVENTS_FILEPATH):
 	logger.info("Obtaining most recent MOA and OGLE events...")
 	if not os.path.exists(filepath):
 		logger.warning("File containing most recent MOA and OGLE events not found at %s." % (filepath)) 
@@ -173,8 +193,40 @@ def get_local_events(filepath):
 		event_name_MOA = events_split[LOCAL_EVENT_MOA_INDEX]
 		
 		events_dict = {"OGLE": event_name_OGLE, "MOA": event_name_MOA}
+		logger.info("Most recently checked OGLE event: %s" % (events_dict["OGLE"]))
+		logger.info("Most recently checked MOA event: %s" % (events_dict["MOA"]))
+	return events_dict
+
+def get_newest_events(new_events, newest_local_events):
+	logger.info("Retrieving newest of newly checked events...")
+	OGLE_names = [newest_local_events["OGLE"]]
+	MOA_names = [newest_local_events["MOA"]]
+
+	for event in new_events:
+		
+		if event.has_key("name_OGLE"):
+			name_OGLE = event["name_OGLE"]
+			OGLE_names.append(name_OGLE)
+
+		if event.has_key("name_MOA"):
+			name_MOA = event["name_MOA"]
+			MOA_names.append(name_MOA)
+		
+	newest_OGLE = max(OGLE_names)
+	newest_MOA = max(MOA_names)
+
+	logger.info("Newest OGLE event: %s" % (newest_OGLE))
+	logger.info("Newest MOA event: %s" % (newest_MOA))
+	events_dict = {"OGLE": newest_OGLE, "MOA": newest_MOA}
 
 	return events_dict
+
+def save_newest_events(newest_events, filepath=LOCAL_EVENTS_FILEPATH):
+	logger.info("Saving most recently checked events (%s and %s)..." % (newest_events["OGLE"], newest_events["MOA"]))
+	logger.info("Filepath: %s" % filepath)
+	with open(filepath, "w") as local_event_file:
+		local_event_file.write("%s %s" % (newest_events["OGLE"], newest_events["MOA"]))
+	logger.info("File saved.")
 
 def evaluate_event(event):
 	"""Evaluate whether event is short enough to potentially indicate a rogue planet
@@ -182,6 +234,18 @@ def evaluate_event(event):
 	"""
 	logger.info("")
 	logger.info("Event Evaluation:")
+
+	if event.has_key("name_OGLE"):
+		name_OGLE = event["name_OGLE"]
+	else:
+		name_OGLE = "N/A"
+
+	if event.has_key("name_MOA"):
+		name_MOA = event["name_MOA"]
+	else:
+		name_MOA = "N/A"
+
+	logger.info("Event Name (OGLE): %s, Event Name (MOA): %s" % (name_OGLE, name_MOA))
 
 	# place relevant values from event row in MOA table into dictionary as strings for ease of access
 	try:
@@ -268,7 +332,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 			passing_tE_sources_output += passing_tE_sources[i]
 			if i < len(passing_tE_sources) - 1:
 				passing_tE_sources_output += ", "
-		logger.debug(passing_tE_sources_output)
+		logger.debug("Sources of passing tE values: %s" % (str(passing_tE_sources_output)))
 
 	if assessment_MOA != "":
 		if is_microlensing(assessment_MOA):
@@ -276,13 +340,14 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		else:
 			microlensing_assessment_test = "failed"
 
-	# DEBUG: SOMETHING IS WRONG, WARNING, ERROR. Sometimes (always?) event doesn't have superstamp key in dictionary??
-	# Or something else? Somehow, microlensing_region_test is winding up as "untested."
 	if event.has_key("in_K2_superstamp"):
 		if event["in_K2_superstamp"]:
 			microlensing_region_test = "passed"
 		else:
 			microlensing_region_test = "failed"
+	else:
+		logger.warning("Event has no key in_K2_superstamp even though it should")
+		logger.warning("Event:\n%s" % event)
 	
 	#DEBUG: Testing agreement with using K2 superstamp test ourselves, instead of relying on master list
 	if DEBUGGING_MODE:
@@ -464,7 +529,7 @@ def add_event_to_trigger_dict(event):
 	event_name = converted_event[name_key]
 	global event_trigger_dict
 	event_trigger_dict[event_name] = converted_event
-	logger.debug(str(event_trigger_dict))
+	logger.debug("Added following event to event trigger dictionary: %s" % converted_event)
 
 def convert_event_for_output(event):
 	"""Return a copy of event dictionary which has all elements removed
@@ -592,7 +657,7 @@ ARTEMIS MOA Einstein Time: %s +/- %s
 
 """ % ( event["name_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], event["tE_err_ARTEMIS_MOIA"])
 
-	mail_subject = reference_event_name + " - Potential Short Duration Microlensing Event " + str(notification_level)
+	mail_subject = "ROGUE: " + reference_event_name + " - Potential Short Duration Microlensing Event " + str(notification_level)
 	summary_page_URL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + reference_event_name + "_summary.html"
 	message_text += \
 """\
@@ -617,7 +682,7 @@ Tests:
 """ % (test, event[test])
 		
 	mail_notification.send_notification(message_text, mail_subject, MAILING_LIST)
-	logger.debug(message_text)
+	logger.info(message_text)
 	logger.info("Event notification mailed!")
 
 def main():

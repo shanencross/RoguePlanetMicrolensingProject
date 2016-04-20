@@ -245,6 +245,7 @@ def update_TAP_only_event(event):
 		logger.debug("Obtaining OGLE data for TAP event...")
 		try:
 			event_update_OGLE = event_data_collection.collect_data_OGLE(event["name_OGLE"])
+			#event_update_OGLE = event_data_collection.collect_data_OGLE(event)
 			event.update(event_update_OGLE)
 			logger.debug("OGLE data retrieved.")
 		except Exception as ex:

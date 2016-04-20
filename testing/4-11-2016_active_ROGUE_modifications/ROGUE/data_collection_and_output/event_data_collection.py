@@ -95,7 +95,7 @@ def collect_data(event):
 	#values_MOA keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, mag, mag_err, assessment, lCurve, remarks, RA, Dec
 	#values_OGLE keywords: name, pageURL, tMax, tMax_err, tE, tE_err, u0, u0_err, lCurve, lCurve_zoomed, remarks
 	logger.info("--------------------------------------------")
-	updated_event = {}
+	updated_event = event.copy()
 	event_year_OGLE = ""
 	event_year_MOA = ""
 	if event.has_key("name_OGLE"):
@@ -123,7 +123,7 @@ def collect_data(event):
 
 def build_summary(event):
 	output_string = build_output_string(event)
-	logger.info("Output:\n" + output_string)
+	logger.debug("Output:\n" + output_string)
 	
 	if not os.path.exists(SUMMARY_OUTPUT_DIR):
 		os.makedirs(SUMMARY_OUTPUT_DIR)

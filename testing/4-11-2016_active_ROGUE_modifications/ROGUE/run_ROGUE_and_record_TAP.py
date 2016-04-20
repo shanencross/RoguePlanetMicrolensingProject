@@ -11,11 +11,11 @@ import logging
 import ROGUE
 import TAP_table_recording
 import logger_setup
-import mail_alert
+import mail_notification
 
 # if already running, return
 if os.popen("ps -Af").read().count(__file__) > 1:
-	mail_alert.send_alert("ROGUE code exited because it was already running", "ROGUE code exited", ["shanencross@gmail.com"])
+	mail_notification.send_notification("ROGUE code exited because it was already running", "ROGUE code exited", ["shanencross@gmail.com"])
 	sys.exit(0)
 
 # create and set up filepath and directory for logs -

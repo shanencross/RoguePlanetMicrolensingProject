@@ -147,7 +147,9 @@ def check_event_master_list(local_events):
 	logger.info("Finished checking master list.")
 
 	events_to_evaluate.sort()
-	logger.debug("Events to evaluate: " + str(events_to_evaluate))
+	logger.debug("Events to evaluate:") 
+	for event in events_to_evaluate:
+		logger.debug(str(event))
 	return events_to_evaluate
 
 def test1():

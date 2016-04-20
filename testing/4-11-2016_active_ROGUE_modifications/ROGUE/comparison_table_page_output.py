@@ -43,7 +43,7 @@ OGLE_DIR_BASE = "http://ogle.astrouw.edu.pl/ogle4/ews/"
 # If an event dictionary lacks one of these keys (i.e. an event has only a MOA name, and no OGLE name), "N/A" will be
 # printed in the corresponding table entry.
 COMBINED_FIELDNAMES = ["name_MOA", "name_OGLE", "ROGUE trigger", "TAP trigger", "RA_MOA", "Dec_MOA", "RA_OGLE", "Dec_OGLE", \
-					   "RA_TAP", "Dec_TAP" "priority_TAP", "tE_TAP", "tE_err_TAP", "tE_MOA", "tE_err_MOA", "tE_OGLE", \
+					   "RA_TAP", "Dec_TAP", "priority_TAP", "tE_TAP", "tE_err_TAP", "tE_MOA", "tE_err_MOA", "tE_OGLE", \
 					   "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", \
 					   "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
 					   "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"] 

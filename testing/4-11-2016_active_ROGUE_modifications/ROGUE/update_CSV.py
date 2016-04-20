@@ -15,9 +15,9 @@ LOG_DIR = os.path.join(sys.path[0], "logs/update_CSV_log")
 LOG_NAME = "update_CSV_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
-	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=True, console_output_level = "DEBUG")
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on = True, console_output_level = "DEBUG")
 else:
-	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
+	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on = False, console_output_level = "DEBUG")
 
 def update(file_output_path, new_dict, fieldnames, delimiter=","):
 	# if csv file does NOT yet exist, open it for writing, sort the online events by name, and store each event dictionary
