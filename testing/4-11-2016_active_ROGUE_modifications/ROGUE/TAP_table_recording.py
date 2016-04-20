@@ -17,7 +17,8 @@ import update_CSV
 DEBUGGING_MODE = True
 
 # Set up logger
-LOG_DIR = os.path.join(sys.path[0], "logs/TAP_table_recording_log")
+#LOG_DIR = os.path.join(sys.path[0], "logs/TAP_table_recording_log")
+LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "TAP_table_recording_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:

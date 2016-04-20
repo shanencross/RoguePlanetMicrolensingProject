@@ -14,7 +14,8 @@ DEBUGGING_MODE = True
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "logs/reading_master_list_log")
+#LOG_DIR = os.path.join(sys.path[0], "logs/reading_master_list_log")
+LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "reading_master_list_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:

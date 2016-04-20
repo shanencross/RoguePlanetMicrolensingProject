@@ -12,7 +12,8 @@ import logger_setup
 
 DEBUGGING_MODE = False
 
-LOG_DIR = os.path.join(sys.path[0], "logs/comparison_table_page_output_log")
+#LOG_DIR = os.path.join(sys.path[0], "logs/comparison_table_page_output_log")
+LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "comparison_table_page_output_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:

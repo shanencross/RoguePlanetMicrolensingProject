@@ -22,7 +22,8 @@ DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn i
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "logs/event_data_collection_log")
+#LOG_DIR = os.path.join(sys.path[0], "logs/event_data_collection_log")
+LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "event_data_collection_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
@@ -70,7 +71,7 @@ else:
 	#NOTE 2: TEMP_YEAR isn't working anymore, so perhaps they updated things? No files from the 2015 folder are on the 
 	#server anymore, only those in the 2016 folder. Now using CURRENT_YEAR instead.
 	#TEMP_YEAR = "2015"
-	SUMMARY_OUTPUT_DIR = "/science/robonet/rob/Operations/Logs/" + CURRENT_YEAR + "/WWWLogs/event_summary_pages"
+	SUMMARY_OUTPUT_DIR = "/data/www/html/temp/shortte_alerts/new_version_test"
 
 """
 if DEBUGGING_MODE:

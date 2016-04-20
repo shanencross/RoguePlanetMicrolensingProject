@@ -13,7 +13,8 @@ import logger_setup
 
 DEBUGGING_MODE = True
 
-LOG_DIR = os.path.join(sys.path[0], "logs/event_tables_comparison_log")
+#LOG_DIR = os.path.join(sys.path[0], "logs/event_tables_comparison_log")
+LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "event_tables_comparison_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
@@ -245,12 +246,12 @@ def update_TAP_only_event(event):
 		logger.debug("Obtaining OGLE data for TAP event...")
 		try:
 			event_update_OGLE = event_data_collection.collect_data_OGLE(event["name_OGLE"])
-			#event_update_OGLE = event_data_collection.collect_data_OGLE(event)
 			event.update(event_update_OGLE)
 			logger.debug("OGLE data retrieved.")
 		except Exception as ex:
 			logger.warning("Exception obtaining OGLE data for TAP event.")
 			logger.warning(ex)
+			raise
 
 		logger.debug("Obaining ARTEMIS OGLE data for TAP event...")
 		try:
@@ -260,6 +261,7 @@ def update_TAP_only_event(event):
 				logger.debug("ARTEMIS OGLE data retrieved.")
 		except Exception as ex:
 			logger.warning("Exception obtaining ARTEMIS OGLE data for TAP event.")
+			raise
 
 		# Needs this because we don't check OGLE events for corresponding MOA events
 		# when reading in the TAP file. Conversely, a MOA event will always have an 
@@ -271,6 +273,7 @@ def update_TAP_only_event(event):
 		except Exception as ex:
 			logger.warning("Exception converting event name from OGLE to MOA.")
 			logger.warning(ex)
+			raise
 
 	# Collect MOA data if available
 	if event.has_key("name_MOA") and event["name_MOA"] != "":
@@ -281,6 +284,7 @@ def update_TAP_only_event(event):
 			logger.debug("MOA data retrieved.")
 		except Exception as ex:
 			logger.warning("Exception obtaining MOA data for TAP event.")
+			raise
 
 		logger.debug("Obtaining ARTEMIS MOA data for TAP event...")
 		try:
@@ -290,7 +294,7 @@ def update_TAP_only_event(event):
 				logger.debug("ARTEMIS MOA data retrieved.")
 		except Exception as ex:
 			logger.warning("Exception obtaining ARTEMIS MOA data for TAP event.")
-
+			raise
 """
 def remove_fieldnames(event, fieldnames_to_remove):
 	# Remove specified fieldnames from event dictionary. 

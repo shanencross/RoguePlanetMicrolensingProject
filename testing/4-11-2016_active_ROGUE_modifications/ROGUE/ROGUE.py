@@ -36,7 +36,8 @@ DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn i
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-LOG_DIR = os.path.join(sys.path[0], "logs/ROGUE_log")
+#LOG_DIR = os.path.join(sys.path[0], "logs/ROGUE_log")
+LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "ROGUE_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
@@ -112,7 +113,6 @@ FIELDNAMES = ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", 
 
 DELIMITER = ","
 
-
 """
 #List of tests we will use to determine whether to send out notifications for an event.
 #Any tests omitted will still be run and recorded, but will not affect whether mail notifications
@@ -143,6 +143,7 @@ else:
 
 # Global dictionary of event triggers to update .csv file with
 event_trigger_dict = {}
+update_local_events = True
 
 def run_ROGUE():
 	logger.info("---------------------------------------")
@@ -170,14 +171,25 @@ def run_ROGUE():
 
 	for event in events_to_evaluate:
 		evaluate_event(event)
-
-	newest_events = get_newest_events(events_to_evaluate, newest_local_events)	
-	save_newest_events(newest_events, filepath=LOCAL_EVENTS_FILEPATH)
 	
 	logger.debug("Event trigger dictionary: %s" % str(event_trigger_dict))
 	if event_trigger_dict:
 		save_and_compare_triggers()
 	#logger.debug(str(event_trigger_dict))
+
+	# Save record of the newest OGLE event and newest MOA event
+	# to be used to determine which events are new the next time
+	# ROGUE runs
+
+	if update_local_events:
+		newest_events = get_newest_events(events_to_evaluate, newest_local_events)	
+		save_newest_events(newest_events, filepath=LOCAL_EVENTS_FILEPATH)
+	else:
+		logger.warning("An exception occurred somewhere in the program's execution.")
+		logger.warning("Not saving newest MOA event or newest OGLE event to file.")
+		logger.warning("This set of new events should be evaluated again upon the program's next iteration.")
+		logger.warning("Duplicate mail alerts may occur.")
+		# NOTE: SHOULD ADD CHECK ON MAIL ALERTS FOR WHETHER ALERT HAS BEEN SENT BEFORE OR NOT
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
 
@@ -232,6 +244,8 @@ def evaluate_event(event):
 	"""Evaluate whether event is short enough to potentially indicate a rogue planet
 	and whether it is bright enough to be worth further observation.
 	"""
+	global update_local_events
+
 	logger.info("")
 	logger.info("Event Evaluation:")
 
@@ -253,6 +267,7 @@ def evaluate_event(event):
 	except Exception as ex:
 		logger.warning("Exception collecting data from survey site(s) and/or ARTEMIS")
 		logger.warning(ex)
+		update_local_events = False
 		return
 
 	sources = []
@@ -399,6 +414,8 @@ def evaluate_event_data(event, sources=["OGLE"]):
 def trigger_event(event):
 	"""Runs when an event fits our criteria. Triggers mail notifications and builds summary if those flags are on."""
 
+	global update_local_events
+
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_NOTIFICATIONS_ON:
 		logger.info("Mailing event notification...")
@@ -407,6 +424,7 @@ def trigger_event(event):
 		except Exception as ex:
 			logger.warning("Exception attempting to mail event notification")
 			logger.warning(ex)
+			update_local_events = False
 
 	if SUMMARY_BUILDER_ON:
 		logger.info("Building and outputting event summary page...")
@@ -415,6 +433,7 @@ def trigger_event(event):
 		except Exception as ex:
 			logger.warning("Exception building/outputting event summary")
 			logger.warning(ex)
+			update_local_events = False
 
 	if EVENT_TRIGGER_RECORD_ON:
 		logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later...")
@@ -423,6 +442,7 @@ def trigger_event(event):
 		except Exception as ex:
 			logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
 			logger.warning(ex)
+			update_local_events = False
 
 def check_einstein_time(tE_string, tE_err_string=None):
 	"""Check if Einstein time is short enough for observation."""
@@ -545,6 +565,7 @@ def convert_event_for_output(event):
 	return converted_event
 
 def save_and_compare_triggers():
+	global update_local_events
 	if EVENT_TRIGGER_RECORD_ON:
 		logger.info("Outputting event to .csv record of event triggers...")
 		try:
@@ -552,6 +573,7 @@ def save_and_compare_triggers():
 		except Exception as ex:
 			logger.warning("Exception outputting .csv record of event triggers")
 			logger.warning(ex)
+			update_local_events = False
 			return
 
 		if EVENT_TABLE_COMPARISON_ON:
@@ -560,7 +582,8 @@ def save_and_compare_triggers():
 				event_tables_comparison.compare_and_output(EVENT_TRIGGER_RECORD_FILEPATH, TAP_FILEPATH, COMPARISON_TABLE_FILEPATH)
 			except Exception as ex:
 				logger.warning("Exception generating/outputting comparison table HTML page")
-				logger.warning(ex)		
+				logger.warning(ex)
+				update_local_events = False
 
 def get_notification_level_and_message(event):
 	"""Return notification level as "Warning" or "notification" and related message depending on whether tE error exceeds our threshold constant""" 
@@ -658,7 +681,7 @@ ARTEMIS MOA Einstein Time: %s +/- %s
 """ % ( event["name_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], event["tE_err_ARTEMIS_MOA"])
 
 	mail_subject = "ROGUE: " + reference_event_name + " - Potential Short Duration Microlensing Event " + str(notification_level)
-	summary_page_URL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + reference_event_name + "_summary.html"
+	summary_page_URL = "http://robonet.lcogt.net/temp/shortte_alerts/new_version_test/" + eventName + "_summary.html"
 	message_text += \
 """\
 Event summary page: %s 
