@@ -655,7 +655,7 @@ ARTEMIS OGLE Einstein Time: %s +/- %s
 ARTEMIS MOA Event Name: %s
 ARTEMIS MOA Einstein Time: %s +/- %s
 
-""" % ( event["name_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], event["tE_err_ARTEMIS_MOIA"])
+""" % ( event["name_ARTEMIS_MOA"], event["tE_ARTEMIS_MOA"], event["tE_err_ARTEMIS_MOA"])
 
 	mail_subject = "ROGUE: " + reference_event_name + " - Potential Short Duration Microlensing Event " + str(notification_level)
 	summary_page_URL = "http://robonet.lcogt.net/robonetonly/WWWLogs/eventSummaryPages/" + reference_event_name + "_summary.html"
