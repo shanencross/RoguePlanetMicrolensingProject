@@ -139,7 +139,8 @@ else:
 	SUMMARY_BUILDER_ON = True
 	EVENT_TRIGGER_RECORD_ON = True
 	EVENT_TABLE_COMPARISON_ON = True
-	MAILING_LIST = ["shanencross@gmail.com"]
+	#MAILING_LIST = ["shanencross@gmail.com"]
+	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com"]
 	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
 	#				"yossishv@gmail.com", "robonet-ops@lcogt.net"]
 
@@ -657,8 +658,6 @@ def check_if_event_has_been_mailed_before(event):
 			# If there is no match found, event alert has not been sent before
 			logger.info("No record of this event having triggered a previous mail notification found.")
 			return False
-				
-				
 
 def send_mail_notification(event):
 	if check_if_event_has_been_mailed_before(event):
