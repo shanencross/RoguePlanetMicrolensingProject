@@ -21,3 +21,7 @@ Local: /data/www/html/temp/shortte_alerts/new_version_test/comparison_table/ROGU
 
 TAP target table CSV filepath: /home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/ROGUE_2/TAP_target_table/TAP_target_table.csv
 ROGUE trigger event list CSV filepath: /home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/ROGUE_2/event_trigger_record/event_trigger_record.csv
+
+exoFOP event master list filepath: /science/robonet/rob/Operations/ExoFOP/master_events_list
+Survey data list of MOA events and parameters: /science/robonet/rob/Operations/SurveyData/MOA/moa_lenses.par
+Survey data list of OGLE events and parameters: /science/robonet/rob/Operations/SurveyData/OGLE/lenses.par.[year]
