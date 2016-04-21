@@ -299,14 +299,15 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	
 	assessment_MOA = ""
 	for source in sources:
-		# Run Einstein time test
+		# Run Einstein time test (stricter, tE only check for now; pass in tE and tE_err if you want to include error check too)
 		tE_key = "tE_" + source
-		tE_err_key = "tE_err_" + source
+		#tE_err_key = "tE_err_" + source
 		tE = event[tE_key]
-		tE_err = event[tE_err_key]
+		#tE_err = event[tE_err_key]
 
 		logger.info("For fit from source %s:" % (source))
-		einstein_time_check = check_einstein_time(tE, tE_err)
+		#einstein_time_check = check_einstein_time(tE, tE_err)
+		einstein_time_check = check_einstein_time(tE)
 		if einstein_time_check:
 			logger.info("%s Einstein time passed!" % source)
 			tE_test = "passed"
