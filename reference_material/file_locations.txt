@@ -18,3 +18,6 @@ Currently (URL): http://robonet.lcogt.net/temp/shortte_alerts/new_version_test/c
 Sample comparison table output path:
 URL: http://robonet.lcogt.net/temp/shortte_alerts/new_version_test/comparison_table/ROGUE_vs_TAP_Comparison_Table_test.html
 Local: /data/www/html/temp/shortte_alerts/new_version_test/comparison_table/ROGUE_vs_TAP_Comparison_Table_test.html
+
+TAP target table CSV filepath: /home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/ROGUE_2/TAP_target_table/TAP_target_table.csv
+ROGUE trigger event list CSV filepath: /home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/ROGUE_2/event_trigger_record/event_trigger_record.csv
