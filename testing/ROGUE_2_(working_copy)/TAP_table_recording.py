@@ -1,5 +1,6 @@
 """
 TAP_table_recording.py
+IN-PROGRESS WORKING COPY
 Purpose: Download Markus and update TAP Kepler Short Candidate List from the the robonet server, then compare to stored list of event triggers from webpageAcesss.py
 @author: Shanen Cross
 Date: 2016-03-18

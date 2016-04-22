@@ -4,14 +4,7 @@ IN-USE ACTIVE COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2016-03-31
-"""
-"""
-Note: Does not currently account for corresponding MOA and OGLE events possibly having different years.
-For instance, some 2016 MOA events have 2015 OGLE counterparts.
-This script will detect no OGLE counterpart for such a MOA event.
-It will also ignore any MOA event prior to the current year, regardless of whether its OGLE
-counterpart are listed in the current year.
+Date: 2016-04-21
 """
 import sys # for getting script directory
 import os # for file-handling
@@ -119,7 +112,7 @@ DELIMITER = ","
 #List of tests we will use to determine whether to send out notifications for an event.
 #Any tests omitted will still be run and recorded, but will not affect whether mail notifications
 #are sent out.
-#Possible criteria: tE, microlensing_assessment_MOA, microlensing_region, mag
+#Possible criteria: tE, microlensing_assessment_MOA, K2_microlensing_superstamp_region, mag
 CRITERIA = ["tE"]
 
 # Dictionary showing what
@@ -140,9 +133,10 @@ else:
 	EVENT_TRIGGER_RECORD_ON = True
 	EVENT_TABLE_COMPARISON_ON = True
 	#MAILING_LIST = ["shanencross@gmail.com"]
-	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com"]
-	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
-	#				"yossishv@gmail.com", "robonet-ops@lcogt.net"]
+	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com"]
+	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
+					"yossishv@gmail.com", "robonet-ops@lcogt.net", "david.p.bennett@nasa.gov", \
+					"zhu.908@buckeyemail.osu.edu", "mpenny.astronomy@gmail.com"]
 
 # Global dictionary of event triggers to update .csv file with
 event_trigger_dict = {}
@@ -194,6 +188,7 @@ def run_ROGUE():
 		# NOTE: SHOULD ADD CHECK ON MAIL ALERTS FOR WHETHER ALERT HAS BEEN SENT BEFORE OR NOT
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
+	return 0
 
 def get_newest_local_events(filepath=LOCAL_EVENTS_FILEPATH):
 	logger.info("Obtaining most recent MOA and OGLE events...")
@@ -293,8 +288,8 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	trigger_this_event = False
 	tE_test = "untested"
 	microlensing_assessment_test = "untested"
-	microlensing_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
-	microlensing_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
+	K2_microlensing_superstamp_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
+	K2_microlensing_superstamp_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
 	mag_test = "untested"
 	
 	assessment_MOA = ""
@@ -338,9 +333,9 @@ def evaluate_event_data(event, sources=["OGLE"]):
 				RA_degrees_MOA = event["RA_degrees_MOA"]
 				Dec_degrees_MOA = event["Dec_degrees_MOA"]
 				if check_microlens_region(RA_degrees_MOA, Dec_degrees_MOA):
-					microlensing_region_alternate_test = "passed"
+					K2_microlensing_superstamp_region_alternate_test = "passed"
 				else:
-					microlensing_region_alternate_test = "failed"
+					K2_microlensing_superstamp_region_alternate_test = "failed"
 
 	if event.has_key("passing_tE_sources"):
 		event["passing_tE_sources"].sort()
@@ -360,49 +355,49 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 	if event.has_key("in_K2_superstamp"):
 		if event["in_K2_superstamp"]:
-			microlensing_region_test = "passed"
+			K2_microlensing_superstamp_region_test = "passed"
 		else:
-			microlensing_region_test = "failed"
+			K2_microlensing_superstamp_region_test = "failed"
 	else:
 		logger.warning("Event has no key in_K2_superstamp even though it should")
 		logger.warning("Event:\n%s" % event)
 	
 	#DEBUG: Testing agreement with using K2 superstamp test ourselves, instead of relying on master list
 	if DEBUGGING_MODE:
-		microlensing_region_disagreement = False
+		K2_microlensing_superstamp_region_disagreement = False
 		
 		"""There is a disagreement between the two microlensiong region tests if
 		they have different results and at least one of them has passed (ruling out the case where one
 		is untested and the other has failed, which should not count as a disagreement)"""
-		if microlensing_region_test != microlensing_region_alternate_test:
-			if microlensing_region_test == "passed" or microlensing_region_alternate_test == "passed":
+		if K2_microlensing_superstamp_region_test != K2_microlensing_superstamp_region_alternate_test:
+			if K2_microlensing_superstamp_region_test == "passed" or K2_microlensing_superstamp_region_alternate_test == "passed":
 				microlensing_disagreement = True
 		
 		# If there is a disagreement, log information about it.
-		if microlensing_region_disagreement:
+		if K2_microlensing_superstamp_region_disagreement:
 			logger.warning("There is disagreement about the test for whether the event is in the K2 superstamp.")
 			logger.warning("The test which uses the K2fov module, evaluating the RA and Dec from MOA, says that the event:")
-			if microlensing_region_alternate_test == "passed":
+			if K2_microlensing_superstamp_region_alternate_test == "passed":
 				logger.warning("passes.")
-			elif microlensing_region_alternate_test == "failed":
+			elif K2_microlensing_superstamp_region_alternate_test == "failed":
 				logger.warning("does NOT pass.")
-			elif microlensing_region_alternate_test == "untested":
+			elif K2_microlensing_superstamp_region_alternate_test == "untested":
 				logger.warning("was not tested.")
 			logger.warning("The exoFOP master event list test says that the event:")
-			if microlensing_region_test == "passed":
+			if K2_microlensing_superstamp_region_test == "passed":
 				logger.warning("passes.")
-			elif microlensing_region_test == "failed":
+			elif K2_microlensing_superstamp_region_test == "failed":
 				logger.warning("does NOT pass.")	
 				logger.warning("This means the superstamp entry in the master list is either False or Unknown.")
-			elif microlensing_region_test == "untested":
+			elif K2_microlensing_superstamp_region_test == "untested":
 				logger.warning("was not tested.")
 
 	# Add test results to event dictionary
 	event["tE_test"] = tE_test
 	event["microlensing_assessment_test"] = microlensing_assessment_test
-	event["microlensing_region_test"] = microlensing_region_test
+	event["K2_microlensing_superstamp_region_test"] = K2_microlensing_superstamp_region_test
 	if DEBUGGING_MODE:
-		event["microlensing_region_alternate_test"] = microlensing_region_alternate_test
+		event["K2_microlensing_superstamp_region_alternate_test"] = K2_microlensing_superstamp_region_alternate_test
 	event["mag_test"] = mag_test
 
 	# Turn on trigger flag if the tE test was successful - 
@@ -743,9 +738,9 @@ Event summary page: %s
 """ % (summary_page_URL)
 
 	if DEBUGGING_MODE:
-		tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "microlensing_region_alternate_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
 	else:
-		tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "mag_test"]
 
 	message_text += \
 """\

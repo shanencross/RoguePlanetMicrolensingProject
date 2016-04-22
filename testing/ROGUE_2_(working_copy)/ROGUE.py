@@ -1,6 +1,6 @@
 """
 ROGUE.py
-IN-USE ACTIVE COPY
+IN-PROGRESS WORKING COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
@@ -16,6 +16,7 @@ counterpart are listed in the current year.
 import sys # for getting script directory
 import os # for file-handling
 import logging
+import csv
 import requests # for fetching webpages
 from bs4 import BeautifulSoup # html parsing dates
 from datetime import datetime # for getting current year for directories and URLs
@@ -58,7 +59,14 @@ TAP_FILENAME = "TAP_target_table.csv"
 TAP_FILEPATH = os.path.join(TAP_DIR, TAP_FILENAME)
 
 # Set up filepath for ROGUE vs. TAP comparison table HTML file
-COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table")
+#COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table")
+
+if DEBUGGING_MODE:
+	COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table")
+	if not os.path.exists(COMPARISON_TABLE_DIR):
+		os.makedirs(COMPARISON_TABLE_DIR)
+else:
+	COMPARISON_TABLE_DIR = "/data/www/html/temp/shortte_alerts/new_version_test/comparison_table"
 COMPARISON_TABLE_FILENAME = "ROGUE_vs_TAP_Comparison_Table.html"
 COMPARISON_TABLE_FILEPATH = os.path.join(COMPARISON_TABLE_DIR, COMPARISON_TABLE_FILENAME)
 if not os.path.exists(COMPARISON_TABLE_DIR):
@@ -90,7 +98,7 @@ TIME_INDEX = 5
 U0_INDEX = 6
 BASELINE_MAG_INDEX = 7
 
-MAX_EINSTEIN_TIME = 10 # days - only check events as short or shorter than this
+MAX_EINSTEIN_TIME = 3 # days - only check events as short or shorter than this
 MIN_MAG = 17.5 # magnitude units - only check events as bright or brighter than this
 			   # (i.e. numerically more negative values)
 MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
@@ -117,7 +125,7 @@ DELIMITER = ","
 #List of tests we will use to determine whether to send out notifications for an event.
 #Any tests omitted will still be run and recorded, but will not affect whether mail notifications
 #are sent out.
-#Possible criteria: tE, microlensing_assessment_MOA, microlensing_region, mag
+#Possible criteria: tE, microlensing_assessment_MOA, K2_microlensing_superstamp_region, mag
 CRITERIA = ["tE"]
 
 # Dictionary showing what
@@ -138,6 +146,7 @@ else:
 	EVENT_TRIGGER_RECORD_ON = True
 	EVENT_TABLE_COMPARISON_ON = True
 	MAILING_LIST = ["shanencross@gmail.com"]
+	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com"]
 	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
 	#				"yossishv@gmail.com", "robonet-ops@lcogt.net"]
 
@@ -173,8 +182,8 @@ def run_ROGUE():
 		evaluate_event(event)
 	
 	logger.debug("Event trigger dictionary: %s" % str(event_trigger_dict))
-	if event_trigger_dict:
-		save_and_compare_triggers()
+	if event_trigger_dict and EVENT_TRIGGER_RECORD_ON:
+		compare_triggers()
 	#logger.debug(str(event_trigger_dict))
 
 	# Save record of the newest OGLE event and newest MOA event
@@ -188,7 +197,6 @@ def run_ROGUE():
 		logger.warning("An exception occurred somewhere in the program's execution.")
 		logger.warning("Not saving newest MOA event or newest OGLE event to file.")
 		logger.warning("This set of new events should be evaluated again upon the program's next iteration.")
-		logger.warning("Duplicate mail alerts may occur.")
 		# NOTE: SHOULD ADD CHECK ON MAIL ALERTS FOR WHETHER ALERT HAS BEEN SENT BEFORE OR NOT
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
@@ -291,20 +299,21 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	trigger_this_event = False
 	tE_test = "untested"
 	microlensing_assessment_test = "untested"
-	microlensing_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
-	microlensing_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
+	K2_microlensing_superstamp_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
+	K2_microlensing_superstamp_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
 	mag_test = "untested"
 	
 	assessment_MOA = ""
 	for source in sources:
-		# Run Einstein time test
+		# Run Einstein time test (stricter, tE only check for now; pass in tE and tE_err if you want to include error check too)
 		tE_key = "tE_" + source
-		tE_err_key = "tE_err_" + source
+		#tE_err_key = "tE_err_" + source
 		tE = event[tE_key]
-		tE_err = event[tE_err_key]
+		#tE_err = event[tE_err_key]
 
 		logger.info("For fit from source %s:" % (source))
-		einstein_time_check = check_einstein_time(tE, tE_err)
+		#einstein_time_check = check_einstein_time(tE, tE_err)
+		einstein_time_check = check_einstein_time(tE)
 		if einstein_time_check:
 			logger.info("%s Einstein time passed!" % source)
 			tE_test = "passed"
@@ -335,9 +344,9 @@ def evaluate_event_data(event, sources=["OGLE"]):
 				RA_degrees_MOA = event["RA_degrees_MOA"]
 				Dec_degrees_MOA = event["Dec_degrees_MOA"]
 				if check_microlens_region(RA_degrees_MOA, Dec_degrees_MOA):
-					microlensing_region_alternate_test = "passed"
+					K2_microlensing_superstamp_region_alternate_test = "passed"
 				else:
-					microlensing_region_alternate_test = "failed"
+					K2_microlensing_superstamp_region_alternate_test = "failed"
 
 	if event.has_key("passing_tE_sources"):
 		event["passing_tE_sources"].sort()
@@ -357,49 +366,49 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 	if event.has_key("in_K2_superstamp"):
 		if event["in_K2_superstamp"]:
-			microlensing_region_test = "passed"
+			K2_microlensing_superstamp_region_test = "passed"
 		else:
-			microlensing_region_test = "failed"
+			K2_microlensing_superstamp_region_test = "failed"
 	else:
 		logger.warning("Event has no key in_K2_superstamp even though it should")
 		logger.warning("Event:\n%s" % event)
 	
 	#DEBUG: Testing agreement with using K2 superstamp test ourselves, instead of relying on master list
 	if DEBUGGING_MODE:
-		microlensing_region_disagreement = False
+		K2_microlensing_superstamp_region_disagreement = False
 		
 		"""There is a disagreement between the two microlensiong region tests if
 		they have different results and at least one of them has passed (ruling out the case where one
 		is untested and the other has failed, which should not count as a disagreement)"""
-		if microlensing_region_test != microlensing_region_alternate_test:
-			if microlensing_region_test == "passed" or microlensing_region_alternate_test == "passed":
+		if K2_microlensing_superstamp_region_test != K2_microlensing_superstamp_region_alternate_test:
+			if K2_microlensing_superstamp_region_test == "passed" or K2_microlensing_superstamp_region_alternate_test == "passed":
 				microlensing_disagreement = True
 		
 		# If there is a disagreement, log information about it.
-		if microlensing_region_disagreement:
+		if K2_microlensing_superstamp_region_disagreement:
 			logger.warning("There is disagreement about the test for whether the event is in the K2 superstamp.")
 			logger.warning("The test which uses the K2fov module, evaluating the RA and Dec from MOA, says that the event:")
-			if microlensing_region_alternate_test == "passed":
+			if K2_microlensing_superstamp_region_alternate_test == "passed":
 				logger.warning("passes.")
-			elif microlensing_region_alternate_test == "failed":
+			elif K2_microlensing_superstamp_region_alternate_test == "failed":
 				logger.warning("does NOT pass.")
-			elif microlensing_region_alternate_test == "untested":
+			elif K2_microlensing_superstamp_region_alternate_test == "untested":
 				logger.warning("was not tested.")
 			logger.warning("The exoFOP master event list test says that the event:")
-			if microlensing_region_test == "passed":
+			if K2_microlensing_superstamp_region_test == "passed":
 				logger.warning("passes.")
-			elif microlensing_region_test == "failed":
+			elif K2_microlensing_superstamp_region_test == "failed":
 				logger.warning("does NOT pass.")	
 				logger.warning("This means the superstamp entry in the master list is either False or Unknown.")
-			elif microlensing_region_test == "untested":
+			elif K2_microlensing_superstamp_region_test == "untested":
 				logger.warning("was not tested.")
 
 	# Add test results to event dictionary
 	event["tE_test"] = tE_test
 	event["microlensing_assessment_test"] = microlensing_assessment_test
-	event["microlensing_region_test"] = microlensing_region_test
+	event["K2_microlensing_superstamp_region_test"] = K2_microlensing_superstamp_region_test
 	if DEBUGGING_MODE:
-		event["microlensing_region_alternate_test"] = microlensing_region_alternate_test
+		event["K2_microlensing_superstamp_region_alternate_test"] = K2_microlensing_superstamp_region_alternate_test
 	event["mag_test"] = mag_test
 
 	# Turn on trigger flag if the tE test was successful - 
@@ -415,6 +424,7 @@ def trigger_event(event):
 	"""Runs when an event fits our criteria. Triggers mail notifications and builds summary if those flags are on."""
 
 	global update_local_events
+	record_trigger = True
 
 	logger.info("Event is potentially suitable for observation!")
 	if MAIL_NOTIFICATIONS_ON:
@@ -422,9 +432,12 @@ def trigger_event(event):
 		try:
 			send_mail_notification(event)
 		except Exception as ex:
-			logger.warning("Exception attempting to mail event notification")
+			logger.warning("Exception attempting to build and send mail event notification")
 			logger.warning(ex)
 			update_local_events = False
+			# Don't record the trigger if the mail was not sent
+			record_trigger = False
+			
 
 	if SUMMARY_BUILDER_ON:
 		logger.info("Building and outputting event summary page...")
@@ -435,14 +448,21 @@ def trigger_event(event):
 			logger.warning(ex)
 			update_local_events = False
 
-	if EVENT_TRIGGER_RECORD_ON:
-		logger.info("Saving event dictionary to dictionary of event dictionaries, to be outputted later...")
+	if EVENT_TRIGGER_RECORD_ON and record_trigger:
+		logger.info("Saving event dictionary to dictionary of event dictionaries...")
 		try:
 			add_event_to_trigger_dict(event)
 		except Exception as ex:
 			logger.warning("Exception converting event data dictionary format and/or saving event to event trigger dictionary.")
 			logger.warning(ex)
 			update_local_events = False
+
+		logger.info("Saving current event dictionary to file...")
+		try:
+			save_triggers()
+		except Exception as ex:
+			logger.warning("Exception attempting to save event triggers so far to event trigger record file.")
+			logger.warning(ex)
 
 def check_einstein_time(tE_string, tE_err_string=None):
 	"""Check if Einstein time is short enough for observation."""
@@ -564,33 +584,45 @@ def convert_event_for_output(event):
 
 	return converted_event
 
+"""
 def save_and_compare_triggers():
-	global update_local_events
 	if EVENT_TRIGGER_RECORD_ON:
-		logger.info("Outputting event to .csv record of event triggers...")
-		try:
-			update_CSV.update(EVENT_TRIGGER_RECORD_FILEPATH, event_trigger_dict, fieldnames=FIELDNAMES, delimiter=DELIMITER)
-		except Exception as ex:
-			logger.warning("Exception outputting .csv record of event triggers")
-			logger.warning(ex)
-			update_local_events = False
-			return
+		save_triggers()
 
 		if EVENT_TABLE_COMPARISON_ON:
-			logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
-			try:
-				event_tables_comparison.compare_and_output(EVENT_TRIGGER_RECORD_FILEPATH, TAP_FILEPATH, COMPARISON_TABLE_FILEPATH)
-			except Exception as ex:
-				logger.warning("Exception generating/outputting comparison table HTML page")
-				logger.warning(ex)
-				update_local_events = False
+			compare_triggers()
+"""
+
+def save_triggers():
+	global update_local_events
+
+	logger.info("Outputting event to .csv record of event triggers...")
+	try:
+		update_CSV.update(EVENT_TRIGGER_RECORD_FILEPATH, event_trigger_dict, fieldnames=FIELDNAMES, delimiter=DELIMITER)
+	except Exception as ex:
+		logger.warning("Exception outputting .csv record of event triggers")
+		logger.warning(ex)
+		update_local_events = False
+		return
+
+def compare_triggers():
+	global update_local_events
+
+	logger.info("Generating and outputting HTML page with comparison table of ROGUE and TAP event triggers...")
+	try:
+		event_tables_comparison.compare_and_output(EVENT_TRIGGER_RECORD_FILEPATH, TAP_FILEPATH, COMPARISON_TABLE_FILEPATH)
+	except Exception as ex:
+		logger.warning("Exception generating/outputting comparison table HTML page")
+		logger.warning(ex)
+		update_local_events = Fals
 
 def get_notification_level_and_message(event):
-	"""Return notification level as "Warning" or "notification" and related message depending on whether tE error exceeds our threshold constant""" 
+	"""Return notification level as "Warning" or "notification" and related message depending on whether tE error exceeds our threshold constant.""" 
 
 	if not event.has_key("passing_tE_sources"):
 		logger.warning("This event has no recorded passing tE sources (i.e. MOA, OGLE, ARTEMIS_MOA, or ARTEMIS_OGLE).")
 		logger.warning("Cannot discern mail notification level or generate notification level message.")
+		return {}
 
 	notification_level = "Warning"
 	for source in event["passing_tE_sources"]:
@@ -600,10 +632,10 @@ def get_notification_level_and_message(event):
 			notification_level = "Alert"
 
 	message = "Because"
-	if notification_level == "Warning":
-		message += " at least one of the Einstein Times that passed our criteria has an error smaller than"
-	elif notification_level == "Alert":
-		message += " none of the Einstein Times that passed our criteria have an error greater than"
+	if notification_level == "Alert":
+		message += " at least one of the Einstein times that passed our criteria has an error smaller than or equal to"
+	elif notification_level == "Warning":
+		message += " each of the Einstein times that passed our criteria has an error greater than"
 
 	message += " an error threshold of " + str(EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD)
 	message += " day(s), this email has been given the status of \"Event %s\"." % str(notification_level)
@@ -612,7 +644,36 @@ def get_notification_level_and_message(event):
 	
 	return notification_dict
 
+def check_if_event_has_been_mailed_before(event):
+	
+	# If there is no trigger record yet, the event has not been mailed before
+	if not os.path.exists(EVENT_TRIGGER_RECORD_FILEPATH):
+		return False
+
+	logger.info("Checking event trigger record for whether a mail notification has been triggered for this event previously...")
+	with open(EVENT_TRIGGER_RECORD_FILEPATH, "r") as event_trigger_record_file:
+			logger.info("Event trigger record opened for reading.")
+			reader = csv.DictReader(event_trigger_record_file, delimiter=DELIMITER)
+			for row in reader:
+				if event.has_key("name_OGLE") and row.has_key("name_OGLE") and event["name_OGLE"] == row["name_OGLE"]:
+					logger.warning("Event %s already found in event trigger record." % event["name_OGLE"])
+					return True
+
+				if event.has_key("name_MOA") and row.has_key("name_MOA") and event["name_MOA"] == row["name_MOA"]:
+					logger.warning("Event %s already found in event trigger record." % event["name_MOA"])
+					return True
+
+			# If there is no match found, event alert has not been sent before
+			logger.info("No record of this event having triggered a previous mail notification found.")
+			return False
+
 def send_mail_notification(event):
+	if check_if_event_has_been_mailed_before(event):
+		logger.warning("Event has already been mailed before.")
+		logger.warning("Aborting mail notification.")
+		logger.debug("Event that had been mailed before: %s" % str(event))
+		return
+
 	"""Send mail notification upon detecting short duration microlensing event"""
 	"""
 	if DEBUGGING_MODE:
@@ -689,9 +750,9 @@ Event summary page: %s
 """ % (summary_page_URL)
 
 	if DEBUGGING_MODE:
-		tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "microlensing_region_alternate_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
 	else:
-		tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "mag_test"]
 
 	message_text += \
 """\
@@ -703,10 +764,46 @@ Tests:
 """\
 %s status: %s
 """ % (test, event[test])
-		
-	mail_notification.send_notification(message_text, mail_subject, MAILING_LIST)
-	logger.info(message_text)
+		message_text += get_test_specific_text(test, event)
+
+	logger.debug("Mail notification text:\n%s" % message_text)
+	try:
+		mail_notification.send_notification(message_text, mail_subject, MAILING_LIST)
+	except Exception as ex:
+		logger.warning("Exception attempting to send mail notification.")
+		logger.warning(ex)
+		raise		
+
 	logger.info("Event notification mailed!")
+
+def get_test_specific_text(test, event):
+	text = ""
+
+	if test == "tE_test":
+		text += \
+"""\
+(%s passes if any one of the available tE values (from MOA/OGLE/ARTEMIS) is less than or equal to %s day(s)) 
+""" % (test, MAX_EINSTEIN_TIME)
+
+	if test == "microlensing_assessment_MOA_test":
+		text += \
+"""\
+(%s passes if MOA event \"assessment\" reports event as either \"microlensing\" or \"microlensing/cv\", but not \"cv\")
+""" % (test)
+
+	elif test == "K2_microlensing_superstamp_region_test":
+		text += \
+"""\
+(%s passes if event is confirmed to be in K2 microlensing superstamp region)"
+""" % (test)
+
+	elif test == "mag_test":
+		text += \
+"""\
+(%s passes if most recent MOA magnitude with error less than %s is dimmer than %s)
+""" % (test, MAX_MAG_ERR, MIN_MAG)
+
+	return text
 
 def main():
 	run_ROGUE()

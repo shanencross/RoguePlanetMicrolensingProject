@@ -1,5 +1,5 @@
 """
-run_ROGUE_and_record_TAP.py
+run_ROGUE_2_and_record_TAP.py
 @author: Shanen Cross
 Purpose: Execute TAP_table_recording.py folllowed by ROGUE.py to record TAP table and then run microlensing survey page check 
 """
@@ -22,7 +22,7 @@ if os.popen("ps -Af").read().count(__file__) > 1:
 # log dir is subdir of script
 #LOG_DIR = os.path.join(sys.path[0], "logs/run_ROGUE_and_TAP_recorder_log")
 LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
-LOG_NAME = "run_ROGUE_and_TAP_recorder_log"
+LOG_NAME = "run_ROGUE_2_and_TAP_recorder_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)
 
@@ -37,7 +37,8 @@ def run_ROGUE_and_TAP_recorder():
 		
 	try:
 		logger.info("Running ROGUE short duration microlensing alert system...")
-		ROGUE.run_ROGUE()
+		ROGUE_result = ROGUE.run_ROGUE()
+		logger.info("ROGUE returned: %s" % str(ROGUE_result))
 	except Exception as ex:
 		logger.warning("Exception running ROGUE.")
 		logger.warning(ex)

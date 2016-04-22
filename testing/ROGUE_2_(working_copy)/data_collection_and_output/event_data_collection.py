@@ -1,6 +1,6 @@
 """
 event_data_collection.py
-IN-USE ACTIVE COPY
+IN-PROGRESS WORKING COPY
 Author: Shanen Cross
 Date: 2016-03-21
 Purpose: 

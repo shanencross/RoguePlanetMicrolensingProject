@@ -1,5 +1,6 @@
 """
 reading_master_list.py
+IN-PROGRESS WORKING COPY
 @author: Shanen Cross
 """
 
@@ -8,7 +9,7 @@ import os
 import logging
 
 import logger_setup
-import ROGUE
+#import ROGUE
 
 DEBUGGING_MODE = True
 
@@ -74,6 +75,7 @@ def check_event_master_list(local_events):
 		for line in masterList:
 			if line[0] == "#":
 				continue
+			logger.debug(str(line))
 
 			lineSplit = line.split()
 			in_K2_footprint = convert_string_to_boolean(lineSplit[2])
@@ -96,14 +98,25 @@ def check_event_master_list(local_events):
 				year_MOA = int(name_MOA[YEAR_START_INDEX_MOA:YEAR_END_INDEX_MOA])
 				num_MOA = int(name_MOA[NUM_START_INDEX_MOA:])
 
-			if num_OGLE != None and num_OGLE > local_num_OGLE and year_OGLE != None and year_OGLE >= local_year_OGLE \
-			and num_MOA != None and num_MOA > local_num_MOA and year_MOA != None and year_MOA >= local_year_MOA:
+#			if num_OGLE != None and num_OGLE > local_num_OGLE and year_OGLE != None and year_OGLE >= local_year_OGLE \
+#			and num_MOA != None and num_MOA > local_num_MOA and year_MOA != None and year_MOA >= local_year_MOA:
 
-				logger.debug("%s > %s" % (num_OGLE, local_num_OGLE))
-				logger.debug("%s > %s" % (year_OGLE, local_year_OGLE))
+			if num_OGLE != None and year_OGLE != None and num_MOA != None and year_MOA != None \
+			and ((num_MOA > local_num_MOA and year_MOA >= local_year_MOA) or (num_OGLE > local_num_OGLE and year_OGLE >= local_year_OGLE)):		
+			# exoFOP: has both OGLE and MOA numbers/years.			
+			# Either: 
+				# OGLE number is greater than stored OGLE number.
+				# OGLE year is as or more recent than stored OGLE year.
+			# OR:
+				# MOA number is greater than stored MOA number.
+				# MOA year is as or more recent than stored MOA year.")
+				logger.debug("%s ? %s" % (num_OGLE, local_num_OGLE))
+				logger.debug("%s ? %s" % (year_OGLE, local_year_OGLE))
 
-				logger.debug("%s > %s" % (num_MOA, local_num_MOA))
-				logger.debug("%s > %s" % (year_MOA, local_year_MOA))
+				logger.debug("%s ? %s" % (num_MOA, local_num_MOA))
+				logger.debug("%s ? %s" % (year_MOA, local_year_MOA))
+
+				logger.debug("For at least one of the above num/year pairs, the comparison symbol should be >.")
 
 				logger.info("New event found!")
 				logger.info("Event: %s" % name_OGLE)
@@ -118,6 +131,10 @@ def check_event_master_list(local_events):
 			
 			if num_OGLE == None and year_OGLE == None \
 			 and num_MOA != None and num_MOA > local_num_MOA and year_MOA != None and year_MOA >= local_year_MOA:
+				# exoFOP has: no OGLE number/year. But has MOA number/year.
+				# MOA number is greater than stored MOA number.
+				# MOA year is as or more recent than stored MOA year.
+
 				logger.debug("%s > %s" % (num_MOA, local_num_MOA))
 				logger.debug("%s > %s" % (year_MOA, local_year_MOA))
 
@@ -131,8 +148,11 @@ def check_event_master_list(local_events):
 				events_to_evaluate.append(event)
 				logger.info("-------------------------------------")
 
-			elif num_MOA == None and year_MOA == None \
+			if num_MOA == None and year_MOA == None \
 			 and num_OGLE > local_num_OGLE and year_OGLE != None and year_OGLE >= local_year_OGLE:
+				# exoFOP has: no MOA number/year. But has OGLE number/year.
+				# OGLE number is greater than stored OGLE number.
+				# OGLE year is as or more recent than stored OGLE year.:
 			
 				logger.debug("%s > %s" % (num_OGLE, local_num_OGLE))
 				logger.debug("%s > %s" % (year_OGLE, local_year_OGLE))
