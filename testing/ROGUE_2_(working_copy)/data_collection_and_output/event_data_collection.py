@@ -1,6 +1,6 @@
 """
 event_data_collection.py
-IN-PROGRESS WORKING COPY
+IN-USE ACTIVE COPY
 Author: Shanen Cross
 Date: 2016-03-21
 Purpose: 
@@ -30,7 +30,6 @@ if DEBUGGING_MODE:
 	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=True, console_output_level = "DEBUG")
 else:
 	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
-
 
 MAX_MAG_ERR = 0.7
 

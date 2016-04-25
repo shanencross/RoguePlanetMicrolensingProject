@@ -1,17 +1,10 @@
 """
 ROGUE.py
-IN-PROGRESS WORKING COPY
+IN-USE ACTIVE COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
-Date: 2016-03-31
-"""
-"""
-Note: Does not currently account for corresponding MOA and OGLE events possibly having different years.
-For instance, some 2016 MOA events have 2015 OGLE counterparts.
-This script will detect no OGLE counterpart for such a MOA event.
-It will also ignore any MOA event prior to the current year, regardless of whether its OGLE
-counterpart are listed in the current year.
+Date: 2016-04-21
 """
 import sys # for getting script directory
 import os # for file-handling
@@ -48,7 +41,10 @@ else:
 
 # set up filepath and directory for local copy of newest microlensing event
 LOCAL_EVENTS_FILENAME = "last_events.txt"
-LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_events")
+if DEBUGGING_MODE:
+	LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_events_debugging")
+else:
+	LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_events")
 LOCAL_EVENTS_FILEPATH = os.path.join(LOCAL_EVENTS_DIR, LOCAL_EVENTS_FILENAME)
 if not os.path.exists(LOCAL_EVENTS_DIR):
 	os.makedirs(LOCAL_EVENTS_DIR)
@@ -60,13 +56,11 @@ TAP_FILEPATH = os.path.join(TAP_DIR, TAP_FILENAME)
 
 # Set up filepath for ROGUE vs. TAP comparison table HTML file
 #COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table")
-
 if DEBUGGING_MODE:
-	COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table")
-	if not os.path.exists(COMPARISON_TABLE_DIR):
-		os.makedirs(COMPARISON_TABLE_DIR)
+	COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table_debugging")
 else:
 	COMPARISON_TABLE_DIR = "/data/www/html/temp/shortte_alerts/new_version_test/comparison_table"
+
 COMPARISON_TABLE_FILENAME = "ROGUE_vs_TAP_Comparison_Table.html"
 COMPARISON_TABLE_FILEPATH = os.path.join(COMPARISON_TABLE_DIR, COMPARISON_TABLE_FILENAME)
 if not os.path.exists(COMPARISON_TABLE_DIR):
@@ -105,9 +99,11 @@ MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
 				  # NOTE: A global variable of the same name in event_data_collections
 			      # needs to be changed in event_data_collection too if you want consistnecy
 EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD = 1 # days - if Einstein Time error is less than this, email is labeled "Event Notification"; 
-										# otherwise email is labeled "Event Warning"
-
-EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "event_trigger_record")
+											   # otherwise email is labeled "Event Warning"
+if DEBUGGING_MODE:
+	EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "event_trigger_record_debugging")										
+else:
+	EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "event_trigger_record")
 EVENT_TRIGGER_RECORD_FILENAME = "event_trigger_record.csv"
 EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRIGGER_RECORD_FILENAME)
 if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
@@ -145,10 +141,12 @@ else:
 	SUMMARY_BUILDER_ON = True
 	EVENT_TRIGGER_RECORD_ON = True
 	EVENT_TABLE_COMPARISON_ON = True
-	MAILING_LIST = ["shanencross@gmail.com"]
+	#MAILING_LIST = ["shanencross@gmail.com"]
 	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com"]
-	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
-	#				"yossishv@gmail.com", "robonet-ops@lcogt.net"]
+	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
+					"yossishv@gmail.com", "robonet-ops@lcogt.net", "david.p.bennett@nasa.gov", \
+					"zhu.908@buckeyemail.osu.edu", "mpenny.astronomy@gmail.com", "radek.poleski@gmail.com", \
+					"virginiebatista78@gmail.com"]
 
 # Global dictionary of event triggers to update .csv file with
 event_trigger_dict = {}
@@ -200,6 +198,7 @@ def run_ROGUE():
 		# NOTE: SHOULD ADD CHECK ON MAIL ALERTS FOR WHETHER ALERT HAS BEEN SENT BEFORE OR NOT
 	logger.info("Ending program")
 	logger.info("---------------------------------------")
+	return 0
 
 def get_newest_local_events(filepath=LOCAL_EVENTS_FILEPATH):
 	logger.info("Obtaining most recent MOA and OGLE events...")
@@ -307,11 +306,12 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	for source in sources:
 		# Run Einstein time test (stricter, tE only check for now; pass in tE and tE_err if you want to include error check too)
 		tE_key = "tE_" + source
-		#tE_err_key = "tE_err_" + source
+		tE_err_key = "tE_err_" + source
 		tE = event[tE_key]
-		#tE_err = event[tE_err_key]
+		tE_err = event[tE_err_key]
 
 		logger.info("For fit from source %s:" % (source))
+		logger.info("Einstein time: %s +/- %s" % (tE, tE_err))
 		#einstein_time_check = check_einstein_time(tE, tE_err)
 		einstein_time_check = check_einstein_time(tE)
 		if einstein_time_check:
@@ -467,21 +467,21 @@ def trigger_event(event):
 def check_einstein_time(tE_string, tE_err_string=None):
 	"""Check if Einstein time is short enough for observation."""
 	einstein_time = float(tE_string)
-	logger.info("Einstein Time: " + str(einstein_time) + " days")
+	logger.debug("Evaluating Einstein Time: " + str(einstein_time) + " days")
 
 	if tE_err_string != None and tE_err_string != "":
 		einstein_time_err = float(tE_err_string)
-		logger.info("Einstein Time Error: " + str(einstein_time_err) + " days")
+		logger.debug("Evaluating Einstein Time Error: " + str(einstein_time_err) + " days")
 
 		einstein_time_lower_bound = einstein_time - einstein_time_err
-		logger.info("Einstein Time Lower Bound = %s - %s = %s days" % (str(einstein_time), str(einstein_time_err), \
+		logger.debug("Einstein Time Lower Bound = %s - %s = %s days" % (str(einstein_time), str(einstein_time_err), \
 																	   str(einstein_time_lower_bound)))
 
 	else:
-		logger.info("No error given for Einstein time. Using given Einstein Time value as lower bound " + \
-					"for comparison with max Einstein Time threshold.")
+		logger.debug("Not using error for Einstein time evaluation. Using Einstein time value as lower bound " + \
+					 "for comparison with max Einstein time threshold.")
 		einstein_time_lower_bound = einstein_time
-		logger.info("Einstein Time Lower Bound = %s days" % str(einstein_time_lower_bound))
+		logger.debug("Einstein Time Lower Bound = %s days" % str(einstein_time_lower_bound))
 
 	einstein_time_check = (einstein_time_lower_bound <= MAX_EINSTEIN_TIME)
 
@@ -622,7 +622,6 @@ def get_notification_level_and_message(event):
 	if not event.has_key("passing_tE_sources"):
 		logger.warning("This event has no recorded passing tE sources (i.e. MOA, OGLE, ARTEMIS_MOA, or ARTEMIS_OGLE).")
 		logger.warning("Cannot discern mail notification level or generate notification level message.")
-		return {}
 
 	notification_level = "Warning"
 	for source in event["passing_tE_sources"]:
@@ -764,7 +763,6 @@ Tests:
 """\
 %s status: %s
 """ % (test, event[test])
-		message_text += get_test_specific_text(test, event)
 
 	logger.debug("Mail notification text:\n%s" % message_text)
 	try:
@@ -775,35 +773,6 @@ Tests:
 		raise		
 
 	logger.info("Event notification mailed!")
-
-def get_test_specific_text(test, event):
-	text = ""
-
-	if test == "tE_test":
-		text += \
-"""\
-(%s passes if any one of the available tE values (from MOA/OGLE/ARTEMIS) is less than or equal to %s day(s)) 
-""" % (test, MAX_EINSTEIN_TIME)
-
-	if test == "microlensing_assessment_MOA_test":
-		text += \
-"""\
-(%s passes if MOA event \"assessment\" reports event as either \"microlensing\" or \"microlensing/cv\", but not \"cv\")
-""" % (test)
-
-	elif test == "K2_microlensing_superstamp_region_test":
-		text += \
-"""\
-(%s passes if event is confirmed to be in K2 microlensing superstamp region)"
-""" % (test)
-
-	elif test == "mag_test":
-		text += \
-"""\
-(%s passes if most recent MOA magnitude with error less than %s is dimmer than %s)
-""" % (test, MAX_MAG_ERR, MIN_MAG)
-
-	return text
 
 def main():
 	run_ROGUE()

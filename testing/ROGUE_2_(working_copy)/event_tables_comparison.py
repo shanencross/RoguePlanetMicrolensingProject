@@ -1,6 +1,5 @@
 """
 event_tables_comparison.py
-IN-PROGRESS WORKING COPY
 Author: Shanen Cross
 """
 import sys

@@ -1,6 +1,5 @@
 """
 reading_master_list.py
-IN-PROGRESS WORKING COPY
 @author: Shanen Cross
 """
 

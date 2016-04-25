@@ -1,6 +1,5 @@
 """
 update_CSV.py
-IN-PROGRESS WORKING COPY
 @author: Shanen Cross
 """
 import sys

@@ -1,6 +1,5 @@
 """
 comparison_table_page_output.py
-IN-PROGRESS WORKING COPY
 @author: Shanen Cross
 Purpose: Given list of combined ROGUE/TAP dictionaries from compareEventTables.py, ouput comparison table HTML page. 
 """
