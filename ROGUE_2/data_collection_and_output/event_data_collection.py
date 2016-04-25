@@ -31,7 +31,6 @@ if DEBUGGING_MODE:
 else:
 	logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT, console_output_on=False, console_output_level = "DEBUG")
 
-
 MAX_MAG_ERR = 0.7
 
 #for accessing URLs; default value is current year, but buildPage() changes this to MOA event name year,

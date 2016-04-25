@@ -41,7 +41,10 @@ else:
 
 # set up filepath and directory for local copy of newest microlensing event
 LOCAL_EVENTS_FILENAME = "last_events.txt"
-LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_events")
+if DEBUGGING_MODE:
+	LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_events_debugging")
+else:
+	LOCAL_EVENTS_DIR = os.path.join(sys.path[0], "last_events")
 LOCAL_EVENTS_FILEPATH = os.path.join(LOCAL_EVENTS_DIR, LOCAL_EVENTS_FILENAME)
 if not os.path.exists(LOCAL_EVENTS_DIR):
 	os.makedirs(LOCAL_EVENTS_DIR)
@@ -53,7 +56,11 @@ TAP_FILEPATH = os.path.join(TAP_DIR, TAP_FILENAME)
 
 # Set up filepath for ROGUE vs. TAP comparison table HTML file
 #COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table")
-COMPARISON_TABLE_DIR = "/data/www/html/temp/shortte_alerts/new_version_test/comparison_table"
+if DEBUGGING_MODE:
+	COMPARISON_TABLE_DIR = os.path.join(sys.path[0], "comparison_table_debugging")
+else:
+	COMPARISON_TABLE_DIR = "/data/www/html/temp/shortte_alerts/new_version_test/comparison_table"
+
 COMPARISON_TABLE_FILENAME = "ROGUE_vs_TAP_Comparison_Table.html"
 COMPARISON_TABLE_FILEPATH = os.path.join(COMPARISON_TABLE_DIR, COMPARISON_TABLE_FILENAME)
 if not os.path.exists(COMPARISON_TABLE_DIR):
@@ -92,9 +99,11 @@ MAX_MAG_ERR = 0.7 # magnitude units - maximum error allowed for a mag
 				  # NOTE: A global variable of the same name in event_data_collections
 			      # needs to be changed in event_data_collection too if you want consistnecy
 EINSTEIN_TIME_ERROR_NOTIFICATION_THRESHOLD = 1 # days - if Einstein Time error is less than this, email is labeled "Event Notification"; 
-										# otherwise email is labeled "Event Warning"
-
-EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "event_trigger_record")
+											   # otherwise email is labeled "Event Warning"
+if DEBUGGING_MODE:
+	EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "event_trigger_record_debugging")										
+else:
+	EVENT_TRIGGER_RECORD_DIR = os.path.join(sys.path[0], "event_trigger_record")
 EVENT_TRIGGER_RECORD_FILENAME = "event_trigger_record.csv"
 EVENT_TRIGGER_RECORD_FILEPATH = os.path.join(EVENT_TRIGGER_RECORD_DIR, EVENT_TRIGGER_RECORD_FILENAME)
 if not os.path.exists(EVENT_TRIGGER_RECORD_DIR):
@@ -297,11 +306,12 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	for source in sources:
 		# Run Einstein time test (stricter, tE only check for now; pass in tE and tE_err if you want to include error check too)
 		tE_key = "tE_" + source
-		#tE_err_key = "tE_err_" + source
+		tE_err_key = "tE_err_" + source
 		tE = event[tE_key]
-		#tE_err = event[tE_err_key]
+		tE_err = event[tE_err_key]
 
 		logger.info("For fit from source %s:" % (source))
+		logger.info("Einstein time: %s +/- %s" % (tE, tE_err))
 		#einstein_time_check = check_einstein_time(tE, tE_err)
 		einstein_time_check = check_einstein_time(tE)
 		if einstein_time_check:
@@ -457,21 +467,21 @@ def trigger_event(event):
 def check_einstein_time(tE_string, tE_err_string=None):
 	"""Check if Einstein time is short enough for observation."""
 	einstein_time = float(tE_string)
-	logger.info("Einstein Time: " + str(einstein_time) + " days")
+	logger.debug("Evaluating Einstein Time: " + str(einstein_time) + " days")
 
 	if tE_err_string != None and tE_err_string != "":
 		einstein_time_err = float(tE_err_string)
-		logger.info("Einstein Time Error: " + str(einstein_time_err) + " days")
+		logger.debug("Evaluating Einstein Time Error: " + str(einstein_time_err) + " days")
 
 		einstein_time_lower_bound = einstein_time - einstein_time_err
-		logger.info("Einstein Time Lower Bound = %s - %s = %s days" % (str(einstein_time), str(einstein_time_err), \
+		logger.debug("Einstein Time Lower Bound = %s - %s = %s days" % (str(einstein_time), str(einstein_time_err), \
 																	   str(einstein_time_lower_bound)))
 
 	else:
-		logger.info("No error given for Einstein time. Using given Einstein Time value as lower bound " + \
-					"for comparison with max Einstein Time threshold.")
+		logger.debug("Not using error for Einstein time evaluation. Using Einstein time value as lower bound " + \
+					 "for comparison with max Einstein time threshold.")
 		einstein_time_lower_bound = einstein_time
-		logger.info("Einstein Time Lower Bound = %s days" % str(einstein_time_lower_bound))
+		logger.debug("Einstein Time Lower Bound = %s days" % str(einstein_time_lower_bound))
 
 	einstein_time_check = (einstein_time_lower_bound <= MAX_EINSTEIN_TIME)
 

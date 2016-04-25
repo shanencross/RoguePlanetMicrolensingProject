@@ -37,7 +37,10 @@ online_TAP_events = {}
 
 # set up and create ouptut directory and filename for TAP target table
 TAP_TARGET_TABLE_OUTPUT_FILENAME = "TAP_target_table.csv"
-TAP_TARGET_TABLE_OUTPUT_DIR = os.path.join(sys.path[0], "TAP_target_table")
+if DEBUGGING_MODE:
+	TAP_TARGET_TABLE_OUTPUT_DIR = os.path.join(sys.path[0], "TAP_target_table_debugging")
+else:
+	TAP_TARGET_TABLE_OUTPUT_DIR = os.path.join(sys.path[0], "TAP_target_table")
 TAP_TARGET_TABLE_OUTPUT_FILEPATH = os.path.join(TAP_TARGET_TABLE_OUTPUT_DIR, TAP_TARGET_TABLE_OUTPUT_FILENAME)
 if not os.path.exists(TAP_TARGET_TABLE_OUTPUT_DIR):
 	os.makedirs(TAP_TARGET_TABLE_OUTPUT_DIR)
