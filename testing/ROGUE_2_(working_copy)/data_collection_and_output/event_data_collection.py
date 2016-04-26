@@ -467,9 +467,9 @@ u0: %s +/-%s\
 	   event["tE_err_ARTEMIS_OGLE"], event["u0_ARTEMIS_OGLE"], event["u0_err_ARTEMIS_OGLE"])
 
 	if DEBUGGING_MODE:
-		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
 	else:
-		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", "mag_test"]
 
 	output_string += \
 """\
