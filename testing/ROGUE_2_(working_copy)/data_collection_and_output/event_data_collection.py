@@ -22,8 +22,12 @@ DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn i
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script
-#LOG_DIR = os.path.join(sys.path[0], "logs/event_data_collection_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/event_data_collection_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "event_data_collection_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
@@ -462,14 +466,17 @@ u0: %s +/-%s\
 """ % (event["name_ARTEMIS_OGLE"], event["tMax_ARTEMIS_OGLE"], event["tMax_err_ARTEMIS_OGLE"], event["tE_ARTEMIS_OGLE"], \
 	   event["tE_err_ARTEMIS_OGLE"], event["u0_ARTEMIS_OGLE"], event["u0_err_ARTEMIS_OGLE"])
 
-	tests = ["tE_test", "microlensing_assessment_test", "microlensing_region_test", "microlensing_region_alternate_test", "mag_test"]
+	if DEBUGGING_MODE:
+		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
+	else:
+		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "mag_test"]
+
 	output_string += \
 """\
 <br>
 <br>
 Tests:\
 """
-
 	for test in tests:
 		if event.has_key(test):
 			output_string += \

@@ -13,8 +13,12 @@ import logger_setup
 
 DEBUGGING_MODE = True
 
-#LOG_DIR = os.path.join(sys.path[0], "logs/event_tables_comparison_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/event_tables_comparison_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "event_tables_comparison_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:

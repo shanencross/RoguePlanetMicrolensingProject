@@ -12,8 +12,12 @@ import logger_setup
 
 DEBUGGING_MODE = True
 
-#LOG_DIR = os.path.join(sys.path[0], "logs/comparison_table_page_output_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/comparison_table_page_output_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "comparison_table_page_output_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
@@ -29,7 +33,7 @@ TEST_COMPARISON_PAGE_FILEPATH = "table_output_test.html"
 """
 ROGUE fieldnames: ["name_MOA", "name_OGLE", "ID_MOA", "RA_MOA", "Dec_MOA", "tE_MOA", "tE_err_MOA", "tE_OGLE", "tE_err_OGLE", "tE_ARTEMIS_MOA", "tE_err_ARTEMIS_MOA", \
 				  "tE_ARTEMIS_OGLE", "tE_err_ARTEMIS_OGLE", "u0_MOA", "u0_err_MOA", "u0_OGLE", "u0_err_OGLE", "u0_ARTEMIS_MOA", "u0_err_ARTEMIS_MOA", \
-				  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"] 
+				  "u0_ARTEMIS_OGLE", "u0_err_ARTEMIS_OGLE", "mag_MOA", "mag_err_MOA"]
 
 TAP fieldnames:
 				  ["name_MOA", "name_OGLE", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP"]

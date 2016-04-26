@@ -30,8 +30,12 @@ DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn i
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-#LOG_DIR = os.path.join(sys.path[0], "logs/ROGUE_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/ROGUE_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "ROGUE_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
@@ -146,7 +150,7 @@ else:
 	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
 					"yossishv@gmail.com", "robonet-ops@lcogt.net", "david.p.bennett@nasa.gov", \
 					"zhu.908@buckeyemail.osu.edu", "mpenny.astronomy@gmail.com", "radek.poleski@gmail.com", \
-					"virginiebatista78@gmail.com"]
+					"virginiebatista78@gmail.com", "kjeffk@gmail.com"]
 
 # Global dictionary of event triggers to update .csv file with
 event_trigger_dict = {}
@@ -311,7 +315,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		tE_err = event[tE_err_key]
 
 		logger.info("For fit from source %s:" % (source))
-		logger.info("Einstein time: %s +/- %s" % (tE, tE_err))
+		logger.info("Einstein time: %s +/- %s days" % (tE, tE_err))
 		#einstein_time_check = check_einstein_time(tE, tE_err)
 		einstein_time_check = check_einstein_time(tE)
 		if einstein_time_check:
@@ -749,7 +753,8 @@ Event summary page: %s
 """ % (summary_page_URL)
 
 	if DEBUGGING_MODE:
-		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", \
+				 "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
 	else:
 		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "mag_test"]
 
