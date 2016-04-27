@@ -18,7 +18,7 @@ import logger_setup
 
 requests.packages.urllib3.disable_warnings()
 
-DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn it off when actively being used
+DEBUGGING_MODE = False # Turn this flag on if modifying and testing code - turn it off when actively being used
 
 #create and set up filepath and directory for logs -
 #log dir is subdir of script

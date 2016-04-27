@@ -13,7 +13,7 @@ import TAP_table_recording
 import logger_setup
 import mail_notification
 
-DEBUGGING_MODE = True
+DEBUGGING_MODE = False
 
 # if already running, return
 if os.popen("ps -Af").read().count(__file__) > 1:

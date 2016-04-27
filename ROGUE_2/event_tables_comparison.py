@@ -11,7 +11,7 @@ import comparison_table_page_output
 from data_collection_and_output import event_data_collection #TEMP - WON'T WORK - HOW TO IMPORT FROM SUBDIR OF PARENT DIR?
 import logger_setup
 
-DEBUGGING_MODE = True
+DEBUGGING_MODE = False
 
 if DEBUGGING_MODE:
 	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/event_tables_comparison_log")

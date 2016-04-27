@@ -10,7 +10,7 @@ import logging
 
 import logger_setup
 
-DEBUGGING_MODE = True
+DEBUGGING_MODE = False
 
 if DEBUGGING_MODE:
 	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/comparison_table_page_output_log")
