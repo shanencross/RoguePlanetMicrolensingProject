@@ -10,12 +10,16 @@ import logging
 import logger_setup
 #import ROGUE
 
-DEBUGGING_MODE = False
+DEBUGGING_MODE = True
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-#LOG_DIR = os.path.join(sys.path[0], "logs/reading_master_list_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/reading_master_list_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "reading_master_list_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:

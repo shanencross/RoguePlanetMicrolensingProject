@@ -14,11 +14,15 @@ import logging
 import logger_setup
 import update_CSV
 
-DEBUGGING_MODE = False
+DEBUGGING_MODE = True
 
 # Set up logger
-#LOG_DIR = os.path.join(sys.path[0], "logs/TAP_table_recording_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/TAP_table_recording_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "TAP_table_recording_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:

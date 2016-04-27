@@ -13,6 +13,8 @@ import TAP_table_recording
 import logger_setup
 import mail_notification
 
+DEBUGGING_MODE = True
+
 # if already running, return
 if os.popen("ps -Af").read().count(__file__) > 1:
 	mail_notification.send_notification("ROGUE 2.0 code exited because it was already running", "ROGUE 2.0 code exited", ["shanencross@gmail.com"])
@@ -20,8 +22,12 @@ if os.popen("ps -Af").read().count(__file__) > 1:
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-#LOG_DIR = os.path.join(sys.path[0], "logs/run_ROGUE_and_TAP_recorder_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/run_ROGUE_2_and_TAP_recorder_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "run_ROGUE_2_and_TAP_recorder_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 logger = logger_setup.setup(__name__, LOG_DIR, LOG_NAME, LOG_DATE_TIME_FORMAT)

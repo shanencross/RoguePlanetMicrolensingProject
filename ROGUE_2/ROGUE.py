@@ -26,12 +26,16 @@ import mail_notification # script for sending emails by executing command line t
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
 
-DEBUGGING_MODE = False # Turn this flag on if modifying and testing code - turn it off when actively being used
+DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn it off when actively being used
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script
-#LOG_DIR = os.path.join(sys.path[0], "logs/ROGUE_log")
-LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
+if DEBUGGING_MODE:
+	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/ROGUE_log")
+	if not os.path.exists(LOG_DIR):
+		os.makedirs(LOG_DIR)
+else:
+	LOG_DIR = "/science/robonet/rob/Operations/Logs/2016"
 LOG_NAME = "ROGUE_log"
 LOG_DATE_TIME_FORMAT = "%Y-%m-%d"
 if DEBUGGING_MODE:
@@ -297,7 +301,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 	trigger_this_event = False
 	tE_test = "untested"
-	microlensing_assessment_test = "untested"
+	microlensing_assessment_MOA_test = "untested"
 	K2_microlensing_superstamp_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
 	K2_microlensing_superstamp_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
 	mag_test = "untested"
@@ -311,7 +315,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 		tE_err = event[tE_err_key]
 
 		logger.info("For fit from source %s:" % (source))
-		logger.info("Einstein time: %s +/- %s" % (tE, tE_err))
+		logger.info("Einstein time: %s +/- %s days" % (tE, tE_err))
 		#einstein_time_check = check_einstein_time(tE, tE_err)
 		einstein_time_check = check_einstein_time(tE)
 		if einstein_time_check:
@@ -360,9 +364,9 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 	if assessment_MOA != "":
 		if is_microlensing(assessment_MOA):
-			microlensing_assessment_test = "passed"
+			microlensing_assessment_MOA_test = "passed"
 		else:
-			microlensing_assessment_test = "failed"
+			microlensing_assessment_MOA_test = "failed"
 
 	if event.has_key("in_K2_superstamp"):
 		if event["in_K2_superstamp"]:
@@ -405,7 +409,7 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 	# Add test results to event dictionary
 	event["tE_test"] = tE_test
-	event["microlensing_assessment_test"] = microlensing_assessment_test
+	event["microlensing_assessment_MOA_test"] = microlensing_assessment_MOA_test
 	event["K2_microlensing_superstamp_region_test"] = K2_microlensing_superstamp_region_test
 	if DEBUGGING_MODE:
 		event["K2_microlensing_superstamp_region_alternate_test"] = K2_microlensing_superstamp_region_alternate_test
@@ -749,9 +753,10 @@ Event summary page: %s
 """ % (summary_page_URL)
 
 	if DEBUGGING_MODE:
-		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", \
+				 "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
 	else:
-		tests = ["tE_test", "microlensing_assessment_test", "K2_microlensing_superstamp_region_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", "mag_test"]
 
 	message_text += \
 """\
