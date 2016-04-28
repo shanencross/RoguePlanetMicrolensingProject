@@ -14,10 +14,12 @@ from bs4 import BeautifulSoup #html parsing
 import csv
 
 import logger_setup
+#from ROGUE_2 import debugging_flag
 #import update_CSV
 
 requests.packages.urllib3.disable_warnings()
 
+#DEBUGGING_MODE = debugging_flag.get_debugging_mode_status() 
 DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn it off when actively being used
 
 #create and set up filepath and directory for logs -
@@ -467,7 +469,7 @@ u0: %s +/-%s\
 	   event["tE_err_ARTEMIS_OGLE"], event["u0_ARTEMIS_OGLE"], event["u0_err_ARTEMIS_OGLE"])
 
 	if DEBUGGING_MODE:
-		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
+		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", "K2_microlensing_superstamp_region_alternate_test", "gradient_test_OGLE", "gradient_test_MOA", "mag_test"]
 	else:
 		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", "mag_test"]
 

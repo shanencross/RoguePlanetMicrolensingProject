@@ -23,9 +23,11 @@ from data_collection_and_output import event_data_collection # collecting data f
 import update_CSV
 import event_tables_comparison
 import mail_notification # script for sending emails by executing command line tool
+#import debugging_flag
 
 requests.packages.urllib3.disable_warnings() # to disable warnings when accessing insecure sites
 
+#DEBUGGING_MODE = debugging_flag.get_debugging_mode_status() 
 DEBUGGING_MODE = True # Turn this flag on if modifying and testing code - turn it off when actively being used
 
 # create and set up filepath and directory for logs -
@@ -305,8 +307,43 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	K2_microlensing_superstamp_region_test = "untested" # Checking exoFPO master event list for K2 superstamp
 	K2_microlensing_superstamp_region_alternate_test = "untested" # Testing for K2 superstamp ourselves, with K2fov module
 	mag_test = "untested"
+	gradient_test_MOA = "untested"
+	gradient_test_OGLE = "untested"
 	
-	assessment_MOA = ""
+	# Tests that only apply events which have information from MOA
+	if event.has_key("assessment_MOA"):
+		# MOA microlensing assessment check;
+		# passes if assessment is "microlensing" or "microlensing/cv", fails if just "cv"
+		assessment_MOA = is_microlensing(event["assessment_MOA"])
+		if is_microlensing(assessment_MOA):
+			microlensing_assessment_MOA_test = "passed"
+		else:
+			microlensing_assessment_MOA_test = "failed"
+
+		# MOA latest magnitude check
+		mag_values = [event["mag_MOA"], event["mag_err_MOA"]]
+			if check_mag(mag_values):
+				mag_test = "passed"
+			else:
+				mag_test = "failed"
+		
+		#DEBUG: Run tests that are under development or not meant to be publicly seen
+		if DEBUGGING_MODE:
+			# alternate K2 microlensing superstamp testing using MOA RA and Dec
+			# For testing agreement with two methods of testing K2 superstamp
+			RA_degrees_MOA = event["RA_degrees_MOA"]
+			Dec_degrees_MOA = event["Dec_degrees_MOA"]
+			if check_microlens_region(RA_degrees_MOA, Dec_degrees_MOA):
+				K2_microlensing_superstamp_region_alternate_test = "passed"
+			else:
+				K2_microlensing_superstamp_region_alternate_test = "failed"
+
+			#MOA gradient test
+			# check 
+
+
+
+
 	for source in sources:
 		# Run Einstein time test (stricter, tE only check for now; pass in tE and tE_err if you want to include error check too)
 		tE_key = "tE_" + source
@@ -329,28 +366,6 @@ def evaluate_event_data(event, sources=["OGLE"]):
 			logger.info("%s Einstein time failed: lower bound must be equal to or less than %s days." % (source, str(MAX_EINSTEIN_TIME)))
 			if tE_test == "untested":			
 				tE_test = "failed"		
-
-		# Run tests which only apply to MOA events
-		if source == "MOA":
-			# Run MOA microlensing assessment test
-			assessment_MOA = event["assessment_MOA"]
-
-			# Run MOA most-recent-magnitude-without-too-large-of-an-error test
-			mag_values = [event["mag_MOA"], event["mag_err_MOA"]]
-			if check_mag(mag_values):
-				mag_test = "passed"
-			else:
-				mag_test = "failed"
-
-			#DEBUG: Run alternate K2 microlensing superstamp testing
-			# For testing agreement with two methods of testing K2 superstamp
-			if DEBUGGING_MODE:
-				RA_degrees_MOA = event["RA_degrees_MOA"]
-				Dec_degrees_MOA = event["Dec_degrees_MOA"]
-				if check_microlens_region(RA_degrees_MOA, Dec_degrees_MOA):
-					K2_microlensing_superstamp_region_alternate_test = "passed"
-				else:
-					K2_microlensing_superstamp_region_alternate_test = "failed"
 
 	if event.has_key("passing_tE_sources"):
 		event["passing_tE_sources"].sort()
@@ -411,9 +426,12 @@ def evaluate_event_data(event, sources=["OGLE"]):
 	event["tE_test"] = tE_test
 	event["microlensing_assessment_MOA_test"] = microlensing_assessment_MOA_test
 	event["K2_microlensing_superstamp_region_test"] = K2_microlensing_superstamp_region_test
+	event["mag_test"] = mag_test
+
 	if DEBUGGING_MODE:
 		event["K2_microlensing_superstamp_region_alternate_test"] = K2_microlensing_superstamp_region_alternate_test
-	event["mag_test"] = mag_test
+		event["gradient_test_MOA"] = gradient_test_MOA
+		event["gradient_test_OGLE"] = gradient_test_OGLE
 
 	# Turn on trigger flag if the tE test was successful - 
 	# we can change the criteria for activating the trigger flag if we'd like
@@ -754,7 +772,7 @@ Event summary page: %s
 
 	if DEBUGGING_MODE:
 		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", \
-				 "K2_microlensing_superstamp_region_alternate_test", "mag_test"]
+				 "K2_microlensing_superstamp_region_alternate_test", "gradient_test_MOA", "gradient_test_OGLE", "mag_test"]
 	else:
 		tests = ["tE_test", "microlensing_assessment_MOA_test", "K2_microlensing_superstamp_region_test", "mag_test"]
 
