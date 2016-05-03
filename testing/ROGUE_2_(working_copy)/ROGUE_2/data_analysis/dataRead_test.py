@@ -15,7 +15,7 @@ SURVEY = "MOA"
 #DATA_DIR = os.path.join(os.path.join(DATA_PARENT_DIR, YEAR), SURVEY)
 DATA_DIR = "."
 MINIMUM_SLOPE = 10
-EVENT_NAME= "2016-BLG-160"
+EVENT_NAME= "2016-BLG-027"
 
 if EVENT_NAME == "2016-BLG-027":
 	unknown_file = "2016-BLG-027"
@@ -60,12 +60,12 @@ else:
 
 #current_time = datetime.utcnow()
 
-time_lower_bound = t0 - 100
+time_lower_bound = t0 - 23
 time_upper_bound = t0
 mag_lower_bound = 14
 mag_upper_bound = 20
-gradient_lower_bound = -100
-gradient_upper_bound = 100
+gradient_lower_bound = -15
+gradient_upper_bound = 15
 
 filenames = {"unknown": unknown_file, "xml": xml_file, "dat": dat_file, "param": param_file, "notes": notes_file}
 
@@ -133,36 +133,12 @@ def test1():
 		#print "Mags:", str(mags)
 		#print "Mag errs:", str(mag_errs)
 	
-		smoothed_data_dict = smoothing_data.smooth_data(times, mags)
+		data_dict = {"x": times, "y": mags}
 
-		smoothed_times = smoothed_data_dict["x"]
-		smoothed_mags = smoothed_data_dict["y"]
+		print "Unsmoothed results:"
+		generate_results(data_dict)
 
-		gradients, gradientTimes, minTime, minTime2, minMag, minMag2, \
-			minSlope, maxTime, maxTime2, maxMag, maxMag2, maxSlope = getMinAndMaxSlope(smoothed_times, smoothed_mags)
-
-		print "Min Slope Time:", minTime
-		print "Min Slope Time 2:", minTime2
-		print "Min Slope Mag:", minMag
-		print "Min Slope Mag 2:", minMag2
-		print "Min Slope:", minSlope
-		calcMinSlope = (minMag2 - minMag) / (minTime2 - minTime)
-		print "Calculated Min Slope:", calcMinSlope
-
-		print "Max Slope Time:", maxTime
-		print "Max Slope Time 2:", maxTime2
-		print "Max Slope Mag:", maxMag
-		print "Max Slope Mag 2:", maxMag2
-		print "Max Slope:", maxSlope
-		calcMaxSlope = (maxMag2 - maxMag) / (maxTime2 - maxTime)
-		print "Calculated Max Slope:", calcMaxSlope
-		if abs(minSlope) > MINIMUM_SLOPE:
-			print "TRIGGER"
-		else:
-			print "NO trigger"
-		#print list(reversed(sorted(times)))
-
-		plt.plot(times, mags, "ro")
+		plt.plot(times, mags)
 		#plt.errorbar(times, mags, yerr = mag_errs)
 		plt.axis([time_lower_bound, time_upper_bound, mag_lower_bound, mag_upper_bound])
 		plt.gca().invert_yaxis()
@@ -173,6 +149,38 @@ def test1():
 		plt.axis([time_lower_bound, time_upper_bound, gradient_lower_bound, gradient_upper_bound])
 		plt.gca().invert_yaxis()
 		plt.show()
+
+		smoothed_data_dict = smoothing_data.smooth_data(times, mags, bin_size=5)
+		print "Smoothed results:"
+		generate_results(smoothed_data_dict)
+
+def generate_results(data_dict):
+
+	times = data_dict["x"]
+	mags = data_dict["y"]
+	gradients, gradientTimes, minTime, minTime2, minMag, minMag2, \
+		minSlope, maxTime, maxTime2, maxMag, maxMag2, maxSlope = getMinAndMaxSlope(times,mags)
+
+	print "Min Slope Time:", minTime
+	print "Min Slope Time 2:", minTime2
+	print "Min Slope Mag:", minMag
+	print "Min Slope Mag 2:", minMag2
+	print "Min Slope:", minSlope
+	calcMinSlope = (minMag2 - minMag) / (minTime2 - minTime)
+	print "Calculated Min Slope:", calcMinSlope
+
+	print "Max Slope Time:", maxTime
+	print "Max Slope Time 2:", maxTime2
+	print "Max Slope Mag:", maxMag
+	print "Max Slope Mag 2:", maxMag2
+	print "Max Slope:", maxSlope
+	calcMaxSlope = (maxMag2 - maxMag) / (maxTime2 - maxTime)
+	print "Calculated Max Slope:", calcMaxSlope
+	if abs(minSlope) > MINIMUM_SLOPE:
+		print "TRIGGER"
+	else:
+		print "NO trigger"
+	#print list(reversed(sorted(times)))
 
 def getMinAndMaxSlope(times, mags, interval=float("inf")):
 	#print "Times: " + str(times)
