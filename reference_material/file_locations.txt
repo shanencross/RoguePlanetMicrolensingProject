@@ -5,7 +5,7 @@ Summary page output dir:
 Eventually (local): /data/www/html/temp/shortte_alerts/
 Eventually (URL): http://robonet.lcogt.net/temp/shortte_alerts/
 Currently (locaL): /data/www/html/temp/shortte_alerts/new_version_test/
-Currently (URL): ttp://robonet.lcogt.net/temp/shortte_alerts/new_version_test
+Currently (URL): http://robonet.lcogt.net/temp/shortte_alerts/new_version_test
 Summary page filename format: [survey_name]-[year]-BLG-[event_number]_summary.html
 Note: OGLE event numbers have four digits (e.g. OGLE-2016-BLG-0123 and OGLE-2016-BLG-0099) while MOA event numbers have three digits (e.g. MOA-2016-BLG-123 and MOA-2016-BLG-099)
 
