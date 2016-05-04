@@ -3,7 +3,11 @@ smoothing_data.py
 @author: Shanen Cross
 """
 
-import numpy as np
+import numpy as np	
+import pandas
+import matplotlib.pyplot as plt # For debugging
+
+OLD_SMOOTHING_ON = False
 
 def smooth_data(x_data, y_data, x_err_data=None, y_err_data=None, step_size=.1, bin_size = 5):
 	
@@ -43,12 +47,35 @@ def smooth_data(x_data, y_data, x_err_data=None, y_err_data=None, step_size=.1, 
 
 def smooth_no_errors(x_data, y_data, step_size=.1, bin_size=1):
 
-	smooth_x_data, smooth_y_data = get_moving_average(x_data, y_data, step_size, bin_size)
+	if OLD_SMOOTHING_ON:
+		smooth_x_data, smooth_y_data = get_moving_average_old(x_data, y_data, step_size, bin_size)
+	else:
+		smooth_x_data, smooth_y_data = get_moving_average(x_data, y_data, step_size, bin_size)
 	smoothed_data_dict = {"x": smooth_x_data, "y": smooth_y_data}
 
 	return smoothed_data_dict
 
-def get_moving_average(x,y,step_size=.1,bin_size=1):
+def smooth_with_errors(x_data, y_data, x_err_data, y_err_data, step_size=.1, bin_size=1):
+	#Debug: Temp
+	return None
+
+def get_moving_average(x, y, step_size = 0.1, bin_size = 1):
+	data_dict = {"x": x, "y": y}
+	data_frame = pandas.DataFrame(data_dict)
+	smoothed_data_frame = pandas.rolling_mean(data_frame, window = bin_size)
+	smooth_x = np.array(smoothed_data_frame["x"])
+	smooth_y = np.array(smoothed_data_frame["y"])
+
+	return smooth_x, smooth_y
+
+"""
+def get_moving_average(x, y, step_size = 0.1, bin_size = 1):
+	# My version
+	pass
+"""	
+	
+def get_moving_average_old(x,y,step_size=.1,bin_size=1):
+	#Random Stack Overflow Person Version
 
 	#Code taken from: http://stackoverflow.com/questions/18517722/weighted-moving-average-in-python
     bin_centers  = np.arange(np.min(x),np.max(x)-0.5*step_size,step_size)+0.5*step_size
@@ -61,6 +88,26 @@ def get_moving_average(x,y,step_size=.1,bin_size=1):
 
     return bin_centers,bin_avg
 
-def smooth_with_errors(x_data, y_data, x_err_data, y_err_data, step_size=.1, bin_size=1):
-	#Debug: Temp
-	return None
+def smooth_data_test():
+	x = np.arange(15)
+	y = np.arange(15) 
+	smoothed_data_dict = smooth_data(x, y, bin_size=10)
+	smooth_x = smoothed_data_dict["x"]
+	smooth_y = smoothed_data_dict["y"]
+
+	plt.plot(x, y, "ro")
+	plt.plot(smooth_x, smooth_y, "--bv")
+	plt.axis([-1, 16, -1, 16])
+
+	print smooth_x
+	print smooth_y
+	print len(smooth_x)
+	print len(smooth_y)
+
+	plt.show()
+
+def main():
+	smooth_data_test()
+
+if __name__ == "__main__":
+	main()

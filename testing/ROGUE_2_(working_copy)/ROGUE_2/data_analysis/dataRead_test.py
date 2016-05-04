@@ -15,7 +15,7 @@ SURVEY = "MOA"
 #DATA_DIR = os.path.join(os.path.join(DATA_PARENT_DIR, YEAR), SURVEY)
 DATA_DIR = "."
 MINIMUM_SLOPE = 10
-EVENT_NAME= "2016-BLG-027"
+EVENT_NAME= "2016-BLG-100"
 
 if EVENT_NAME == "2016-BLG-027":
 	unknown_file = "2016-BLG-027"
@@ -60,8 +60,8 @@ else:
 
 #current_time = datetime.utcnow()
 
-time_lower_bound = t0 - 23
-time_upper_bound = t0
+time_lower_bound = t0 - 50
+time_upper_bound = t0 + 50
 mag_lower_bound = 14
 mag_upper_bound = 20
 gradient_lower_bound = -15
@@ -136,23 +136,33 @@ def test1():
 		data_dict = {"x": times, "y": mags}
 
 		print "Unsmoothed results:"
-		generate_results(data_dict)
+		gradient_times, gradients = generate_results(data_dict)
 
-		plt.plot(times, mags)
+		smoothed_data_dict = smoothing_data.smooth_data(times, mags, bin_size=5)
+		print "Smoothed results:"
+		smoothed_gradient_times, smoothed_gradients = generate_results(smoothed_data_dict)
+
+
+		plt.plot(data_dict["x"], data_dict["y"], "ro")
+		#plt.errorbar(times, mags, yerr = mag_errs)
+
+		plt.plot(smoothed_data_dict["x"], smoothed_data_dict["y"], "--bv")
 		#plt.errorbar(times, mags, yerr = mag_errs)
 		plt.axis([time_lower_bound, time_upper_bound, mag_lower_bound, mag_upper_bound])
 		plt.gca().invert_yaxis()
 		plt.show()
 
-		plt.plot(gradientTimes, gradients, "ro")
+		
+		plt.plot(gradient_times, gradients, "ro")
+		#plt.errorbar(times, mags, yerr = mag_errs)
+		plt.axis([time_lower_bound, time_upper_bound, gradient_lower_bound, gradient_upper_bound])
+		
+		plt.plot(smoothed_gradient_times, smoothed_gradients, "--bv")
 		#plt.errorbar(times, mags, yerr = mag_errs)
 		plt.axis([time_lower_bound, time_upper_bound, gradient_lower_bound, gradient_upper_bound])
 		plt.gca().invert_yaxis()
 		plt.show()
 
-		smoothed_data_dict = smoothing_data.smooth_data(times, mags, bin_size=5)
-		print "Smoothed results:"
-		generate_results(smoothed_data_dict)
 
 def generate_results(data_dict):
 
@@ -182,11 +192,13 @@ def generate_results(data_dict):
 		print "NO trigger"
 	#print list(reversed(sorted(times)))
 
+	return gradientTimes, gradients
+
 def getMinAndMaxSlope(times, mags, interval=float("inf")):
 	#print "Times: " + str(times)
 	#print "Mags: " + str(mags)
 	gradients, times_output = calc_lc_gradient(times, mags, interval)
-	minimum_gradient = gradients.min()
+	minimum_gradient = np.nanmin(gradients)
 	minimum_index = gradients.argmin() * 2
 	minimum_time = times[minimum_index]
 	try:
@@ -204,7 +216,7 @@ def getMinAndMaxSlope(times, mags, interval=float("inf")):
 		print ex
 		minimum_mag2 = minimum_mag
 
-	maximum_gradient = gradients.max()
+	maximum_gradient = np.nanmax(gradients)
 	maximum_index = gradients.argmax() * 2
 	maximum_time = times[maximum_index]
 	try:
