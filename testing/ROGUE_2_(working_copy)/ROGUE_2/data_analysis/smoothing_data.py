@@ -4,7 +4,7 @@ smoothing_data.py
 """
 
 import numpy as np	
-import pandas
+import pandas as pd
 import matplotlib.pyplot as plt # For debugging
 
 OLD_SMOOTHING_ON = False
@@ -50,7 +50,7 @@ def smooth_no_errors(x_data, y_data, step_size=.1, bin_size=1):
 	if OLD_SMOOTHING_ON:
 		smooth_x_data, smooth_y_data = get_moving_average_old(x_data, y_data, step_size, bin_size)
 	else:
-		smooth_x_data, smooth_y_data = get_moving_average(x_data, y_data, step_size, bin_size)
+		smooth_x_data, smooth_y_data = get_moving_average_pandas(x_data, y_data, step_size, bin_size)
 	smoothed_data_dict = {"x": smooth_x_data, "y": smooth_y_data}
 
 	return smoothed_data_dict
@@ -59,20 +59,41 @@ def smooth_with_errors(x_data, y_data, x_err_data, y_err_data, step_size=.1, bin
 	#Debug: Temp
 	return None
 
-def get_moving_average(x, y, step_size = 0.1, bin_size = 1):
+def get_moving_average_pandas(x, y, step_size = 0.1, bin_size = 1):
 	data_dict = {"x": x, "y": y}
-	data_frame = pandas.DataFrame(data_dict)
-	smoothed_data_frame = pandas.rolling_mean(data_frame, window = bin_size)
+	data_frame = pd.DataFrame(data_dict)
+	smoothed_data_frame = pd.rolling_mean(data_frame, window = bin_size)
 	smooth_x = np.array(smoothed_data_frame["x"])
 	smooth_y = np.array(smoothed_data_frame["y"])
 
 	return smooth_x, smooth_y
 
-"""
 def get_moving_average(x, y, step_size = 0.1, bin_size = 1):
-	# My version
+	"""
+	-step through each data point (x,y) pair, adding up a sum of y values
+	-if we reach a data point whose x value is a bin_size amount larger than the initial data point's x value,
+	-we divide the y value sum by the number of data points so far to get an average y value for the bin
+	-we set the "time" of the bin to be the center time value of time range (i.e. if our range is from 10-20, bin time is 15;
+	 so if our range is from a to b, bin time is (a + b)/2)
+	-we continue going through the data points, reseting the y_sum, initial_x_value, and data_point count and acquring a avg_mag
+	 and bin time for the next bin
+	-if we reach the end of the data points befure reaching a data point with an x value higher than the bin_size - initial_x_value,
+	 we average all the y values so far and get the center bin time of the time range so far
+	"""
 	pass
-"""	
+
+def get_moving_average_alt(x, y, chunk_size = 3):
+	"""
+	-for a list with indices [0, 1, 2, ...], step through elements with indices [0, chunk_size elements), summing up y values,
+	 and summing up x values
+	-divide y value sum and x value sum sum by number of elements summed to get average y and average x
+	-place this y avg in y avg list and x avg in x avg list.
+	-Repeat above steps for elements with indices [n, n + chunk_size_elements), appending to y avg and x avg lists,
+	 starting wih n=1 (since we already did n=0) up through n = size_of_list
+
+	So, I think this is actually the same as what pd.rolling_mean does, with window parameter being the equivalent of chunk_size.
+	"""
+	pass
 	
 def get_moving_average_old(x,y,step_size=.1,bin_size=1):
 	#Random Stack Overflow Person Version

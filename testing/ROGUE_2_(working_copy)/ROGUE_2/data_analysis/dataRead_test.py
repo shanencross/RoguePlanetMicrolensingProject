@@ -61,7 +61,7 @@ else:
 #current_time = datetime.utcnow()
 
 time_lower_bound = t0 - 50
-time_upper_bound = t0 + 50
+time_upper_bound = t0 + 20
 mag_lower_bound = 14
 mag_upper_bound = 20
 gradient_lower_bound = -15
@@ -136,18 +136,23 @@ def test1():
 		data_dict = {"x": times, "y": mags}
 
 		print "Unsmoothed results:"
-		gradient_times, gradients = generate_results(data_dict)
+		results_dict = generate_results(data_dict)
+		gradient_times, gradients = results_dict["gradient_times"], results_dict["gradients"]
 
-		smoothed_data_dict = smoothing_data.smooth_data(times, mags, bin_size=5)
+		smoothed_data_dict = smoothing_data.smooth_data(times, mags, bin_size=3)
 		print "Smoothed results:"
-		smoothed_gradient_times, smoothed_gradients = generate_results(smoothed_data_dict)
+		smoothed_results_dict = generate_results(smoothed_data_dict)
+		smoothed_gradient_times, smoothed_gradients = smoothed_results_dict["gradient_times"], smoothed_results_dict["gradients"]
 
+		min_slope_time, min_slope_time_2, min_slope_mag, min_slope_mag_2, min_slope = \
+			smoothed_results_dict["min_slope_time"], smoothed_results_dict["min_slope_time_2"], \
+			smoothed_results_dict["min_slope_mag"], smoothed_results_dict["min_slope_mag_2"], smoothed_results_dict["min_slope"]
 
 		plt.plot(data_dict["x"], data_dict["y"], "ro")
 		#plt.errorbar(times, mags, yerr = mag_errs)
-
 		plt.plot(smoothed_data_dict["x"], smoothed_data_dict["y"], "--bv")
 		#plt.errorbar(times, mags, yerr = mag_errs)
+		plt.plot([min_slope_time, min_slope_time_2], [min_slope_mag, min_slope_mag_2], "--gv")
 		plt.axis([time_lower_bound, time_upper_bound, mag_lower_bound, mag_upper_bound])
 		plt.gca().invert_yaxis()
 		plt.show()
@@ -155,10 +160,9 @@ def test1():
 		
 		plt.plot(gradient_times, gradients, "ro")
 		#plt.errorbar(times, mags, yerr = mag_errs)
-		plt.axis([time_lower_bound, time_upper_bound, gradient_lower_bound, gradient_upper_bound])
-		
 		plt.plot(smoothed_gradient_times, smoothed_gradients, "--bv")
 		#plt.errorbar(times, mags, yerr = mag_errs)
+		plt.plot([min_slope_time], [min_slope], "gv")
 		plt.axis([time_lower_bound, time_upper_bound, gradient_lower_bound, gradient_upper_bound])
 		plt.gca().invert_yaxis()
 		plt.show()
@@ -169,7 +173,7 @@ def generate_results(data_dict):
 	times = data_dict["x"]
 	mags = data_dict["y"]
 	gradients, gradientTimes, minTime, minTime2, minMag, minMag2, \
-		minSlope, maxTime, maxTime2, maxMag, maxMag2, maxSlope = getMinAndMaxSlope(times,mags)
+		minSlope, maxTime, maxTime2, maxMag, maxMag2, maxSlope = getMinAndMaxSlope(times, mags)
 
 	print "Min Slope Time:", minTime
 	print "Min Slope Time 2:", minTime2
@@ -191,15 +195,20 @@ def generate_results(data_dict):
 	else:
 		print "NO trigger"
 	#print list(reversed(sorted(times)))
+	
+	results_dict = {"gradient_times": gradientTimes, "gradients": gradients, "min_slope_time": minTime, "min_slope_time_2": minTime2, \
+					"max_slope_time": maxTime, "max_slope_time_2": maxTime2, "min_slope_mag": minMag, "min_slope_mag_2": minMag2, \
+					"min_slope": minSlope, "max_slope": maxSlope}
 
-	return gradientTimes, gradients
+	return results_dict
 
 def getMinAndMaxSlope(times, mags, interval=float("inf")):
 	#print "Times: " + str(times)
 	#print "Mags: " + str(mags)
 	gradients, times_output = calc_lc_gradient(times, mags, interval)
 	minimum_gradient = np.nanmin(gradients)
-	minimum_index = gradients.argmin() * 2
+	minimum_index = np.nanargmin(gradients) * 2
+	print "minimum_index: " + str(minimum_index)
 	minimum_time = times[minimum_index]
 	try:
 		minimum_time2 = times[minimum_index + 1]
@@ -217,7 +226,7 @@ def getMinAndMaxSlope(times, mags, interval=float("inf")):
 		minimum_mag2 = minimum_mag
 
 	maximum_gradient = np.nanmax(gradients)
-	maximum_index = gradients.argmax() * 2
+	maximum_index = np.nanargmax(gradients) * 2
 	maximum_time = times[maximum_index]
 	try:
 		maximum_time2 = times[maximum_index + 1]
@@ -233,20 +242,29 @@ def getMinAndMaxSlope(times, mags, interval=float("inf")):
 		print ex
 		maximum_mag2 = maximum_mag
 
+	print "Length of times_ouptut:" + str(len(times_output))
+	print "Length of gradients:" + str(len(gradients))
+	print "times_output: " + str(times_output)
+	print "gradients: " + str(gradients)
+
 	return gradients, times_output, minimum_time, minimum_time2, minimum_mag, minimum_mag2, minimum_gradient, \
 		   maximum_time, maximum_time2, maximum_mag, maximum_mag2, maximum_gradient
 
 def calc_lc_gradient( times, mags, interval = float("inf")):
+	print "len(times): " + str(len(times))
+	print "len(mags): " + str(len(mags))
 	print "times: " + str(times)
 	print "mags: " + str(mags)
 	gradients = []
 	times_output = []
 	for i in range( 0, len( times )-2, 2 ):
-		#print "Interval:", interval
-		#print "Time difference:", (times[i+1] - times[i])
+		#print "times[%s] : %s" % (str(i), str(times[i]))
+		#print "times[%s + 1] : %s" % (str(i), str(times[i+1]))
 		#print "Times 2 - Time 1: " + str(times[i+1] - times[i])
 		#print "Interval: " + str(interval)
-		if times[i+1] - times[i] < interval:
+		#print "-----------------"
+		#if times[i+1] - times[i] < interval:
+		if True:
 			gradients.append( ( mags[i+1] - mags[i] ) / ( times[i+1] - times[i] ) )
 		times_output.append(times[i])
 	return np.array( gradients ), np.array( times_output )
