@@ -15,7 +15,7 @@ SURVEY = "MOA"
 #DATA_DIR = os.path.join(os.path.join(DATA_PARENT_DIR, YEAR), SURVEY)
 DATA_DIR = "."
 MINIMUM_SLOPE = 10
-EVENT_NAME= "2016-BLG-100"
+EVENT_NAME= "2016-BLG-053"
 
 if EVENT_NAME == "2016-BLG-027":
 	unknown_file = "2016-BLG-027"
@@ -60,12 +60,14 @@ else:
 
 #current_time = datetime.utcnow()
 
-time_lower_bound = t0 - 50
-time_upper_bound = t0 + 20
+time_lower_bound = t0 - 10
+time_upper_bound = t0 + 0
 mag_lower_bound = 14
 mag_upper_bound = 20
 gradient_lower_bound = -15
 gradient_upper_bound = 15
+
+smooth_bin_size = 5
 
 filenames = {"unknown": unknown_file, "xml": xml_file, "dat": dat_file, "param": param_file, "notes": notes_file}
 
@@ -139,7 +141,7 @@ def test1():
 		results_dict = generate_results(data_dict)
 		gradient_times, gradients = results_dict["gradient_times"], results_dict["gradients"]
 
-		smoothed_data_dict = smoothing_data.smooth_data(times, mags, bin_size=3)
+		smoothed_data_dict = smoothing_data.smooth_data(times, mags, bin_size=smooth_bin_size)
 		print "Smoothed results:"
 		smoothed_results_dict = generate_results(smoothed_data_dict)
 		smoothed_gradient_times, smoothed_gradients = smoothed_results_dict["gradient_times"], smoothed_results_dict["gradients"]

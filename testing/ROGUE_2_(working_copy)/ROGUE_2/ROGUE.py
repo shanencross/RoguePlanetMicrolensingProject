@@ -322,10 +322,10 @@ def evaluate_event_data(event, sources=["OGLE"]):
 
 		# MOA latest magnitude check
 		mag_values = [event["mag_MOA"], event["mag_err_MOA"]]
-			if check_mag(mag_values):
-				mag_test = "passed"
-			else:
-				mag_test = "failed"
+		if check_mag(mag_values):
+			mag_test = "passed"
+		else:
+			mag_test = "failed"
 		
 		#DEBUG: Run tests that are under development or not meant to be publicly seen
 		if DEBUGGING_MODE:

@@ -7,10 +7,14 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+"""
 DATA_PARENT_DIR = "/science/robonet/rob/Operations/autodownload.2.0/"
 YEAR = "2016"
 SURVEY = "MOA"
 DATA_DIR = os.path.join(os.path.join(DATA_PARENT_DIR, YEAR), SURVEY)
+"""
+DATA_DIR = "./"
+
 MINIMUM_SLOPE = 10
 EVENT_NAME= "2016-BLG-160"
 
