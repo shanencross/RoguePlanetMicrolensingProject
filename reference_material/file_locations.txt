@@ -25,3 +25,7 @@ ROGUE trigger event list CSV filepath: /home/scross/Documents/Workspace/RoguePla
 exoFOP event master list filepath: /science/robonet/rob/Operations/ExoFOP/master_events_list
 Survey data list of MOA events and parameters: /science/robonet/rob/Operations/SurveyData/MOA/moa_lenses.par
 Survey data list of OGLE events and parameters: /science/robonet/rob/Operations/SurveyData/OGLE/lenses.par.[year]
+
+Original ROGUE directory: /home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/ROGUE_2
+Modified ROGUE directory: /home/robouser/Software/ROGUE_2/
+ROGUE testing directory: /home/scross/Documents/Workspace/RoguePlanetMicrolensingProject/testing/ROGUE_2_(working_copy)
