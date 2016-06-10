@@ -10,7 +10,7 @@ import logging
 import logger_setup
 #import ROGUE
 
-DEBUGGING_MODE = False
+DEBUGGING_MODE = True
 
 # create and set up filepath and directory for logs -
 # log dir is subdir of script

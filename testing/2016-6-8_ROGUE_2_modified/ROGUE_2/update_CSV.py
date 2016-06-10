@@ -9,7 +9,7 @@ import logging
 
 import logger_setup
 
-DEBUGGING_MODE = False
+DEBUGGING_MODE = True
 
 if DEBUGGING_MODE:
 	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/update_CSV_log")

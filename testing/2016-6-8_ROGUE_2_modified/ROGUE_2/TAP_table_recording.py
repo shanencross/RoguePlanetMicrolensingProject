@@ -14,7 +14,7 @@ import logging
 import logger_setup
 import update_CSV
 
-DEBUGGING_MODE = False
+DEBUGGING_MODE = True
 
 # Set up logger
 if DEBUGGING_MODE:

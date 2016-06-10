@@ -13,11 +13,16 @@ import TAP_table_recording
 import logger_setup
 import mail_notification
 
-DEBUGGING_MODE = False
+DEBUGGING_MODE = True
+
+if DEBUGGING_MODE:
+	error_mailing_list = ["shanencross@gmail.com"]
+else:
+	error_mailing_list = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 
 # if already running, return
 if os.popen("ps -Af").read().count(__file__) > 1:
-	mail_notification.send_notification("ROGUE 2.0 code exited because it was already running", "ROGUE 2.0 code exited", ["shanencross@gmail.com"])
+	mail_notification.send_notification("ROGUE 2.0 code exited because it was already running", "ROGUE 2.0 code exited", error_mailing_list)
 	sys.exit(0)
 
 # create and set up filepath and directory for logs -

@@ -10,7 +10,7 @@ import logging
 
 import logger_setup
 
-DEBUGGING_MODE = False
+DEBUGGING_MODE = True
 
 if DEBUGGING_MODE:
 	LOG_DIR = os.path.join(sys.path[0], "logs_debugging/comparison_table_page_output_log")
@@ -39,7 +39,8 @@ TAP fieldnames:
 				  ["name_MOA", "name_OGLE", "priority_TAP", "mag_TAP", "tE_TAP", "tE_err_TAP"]
 """
 
-MOA_DIR_BASE = "https://it019909.massey.ac.nz/moa/alert" 
+#MOA_DIR_BASE = "https://it019909.massey.ac.nz/moa/alert"
+MOA_DIR_BASE = "http://www.massey.ac.nz/~iabond/moa/alert"
 OGLE_DIR_BASE = "http://ogle.astrouw.edu.pl/ogle4/ews/"
 
 # List of fields (dictionary keys) to be used as column headers in the table. 
@@ -149,9 +150,9 @@ def print_page_start(my_file):
 <title>Target Comparison Table: ROGUE and TAP</title><head><STYLE type="text/css">strong.topnav {background: #EFF5FB; color: #0000FF; text-align: center; padding-bottom: 0.2em; font-family: arial, helvetica, times; font-size: 10pt}a.plain {text-decoration:none; color: #0000FF} a:visited {text-decoration:none; color: blue} a.plain:hover {text-decoration:none; background: #819FF7; color: white}BODY { font-family: arial, helvetica, times; background: #FFFFFF; margin-left:0.2em; margin-right: 1em}.textheading {text-align: right; width: 70%; color: #819FF7; font-family: arial, helvetica, times; margin-top: 1.5em}.tablehead {color: #AAAAA; text-align: center; font-family: arial, helvetica, times; font-weight: bold}tablecontent {margin-top: 0.3em; margin-left: 0.2em; margin-bottom: 0.2em; font-family: arial, helvetica, times}.generic {font-family: arial, helvetica, times}.table {font-family: arial, helvetica, times; text-align: center}a:link {text-decoration:none;} a:visited {text-decoration:none; color: blue} a:hover {text-decoration:none; color: #819FF7}</STYLE></head><body>
 <H2> Target Comparison Table: ROGUE and TAP</H2>
 Notes:<BR>
-For ROGUE events and ROGUE+TAP events, parameters were lasted updated since that event triggered. Check survey sites for updated data.<BR>
-For TAP-only events, the parameter values are regulalry updated each time a new comparison table is generated.
-A new table is generated only whenever updates when ROGUE triggers on an event.<BR>
+For each ROGUE-only event and ROGUE+TAP event, parameters were last updated when that event triggered. Check survey sites for updated data.<BR>
+For TAP-only events, the parameter values are regularly updated each time a new comparison table is generated.
+A new table is generated only when ROGUE triggers on an event.<BR>
 Thus any TAP events more recent than the latest ROGUE trigger are not listed.<BR>
 <BR>
 <TABLE cellpadding="4" style="border: 1px solid #000000; border-collapse: collapse;" border="1">
