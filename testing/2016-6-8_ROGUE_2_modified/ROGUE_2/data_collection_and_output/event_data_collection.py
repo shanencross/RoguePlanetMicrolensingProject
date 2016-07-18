@@ -174,10 +174,10 @@ def collect_data_OGLE(event_name):
 	event_URL = OGLE_dir + "/" + name_URL + ".html"
 	try:
 		#time.sleep(1)
-		#print "event page %s" % event_URL
+		logger.debug("Collecting data from event page %s" % event_URL)
 		request = requests.get(event_URL, verify=False, timeout=10)
 	except requests.Timeout as ex:
-		#print "timeout %s" % event_URL
+		logger.debug("Timed out collecting data from %s - trying again" % event_URL)
 		time.sleep(5)
 		request = requests.get(event_URL, verify=False, timeout=10)
 
@@ -287,8 +287,17 @@ def get_file_data_MOA(event_name):
 		return survey_data
 
 def collect_data_MOA_via_ID(event_name, ID):
-	name_URL = MOA_dir + "/display.php?id=" + ID
-	request = requests.get(name_URL, verify=False)
+	event_URL = MOA_dir + "/display.php?id=" + ID
+	try:
+		#time.sleep(1)
+		logger.debug("Collecting data from event page %s" % event_URL)
+		request = requests.get(event_URL, verify=False, timeout=10)
+	except requests.Timeout as ex:
+		logger.debug("Timed out collecting data from %s - trying again" % event_URL)
+		time.sleep(5)
+		request = requests.get(event_URL, verify=False, timeout=10)
+
+	request = requests.get(event_URL, verify=False)
 	page = request.content
 	soup = BeautifulSoup(page, 'lxml')
 	micro_table = soup.find(id="micro").find_all('tr')
@@ -321,7 +330,7 @@ def collect_data_MOA_via_ID(event_name, ID):
 	remarks = str(soup.find_all("table")[1].find("td").string)
 
 	lCurve_plot_URL = MOA_dir + "/fetchimg.php?path=/moa/alert" + event_year_MOA + "/datab/plot-" + ID + ".png"
-	values_MOA = {"name_MOA": event_name, "pageURL_MOA": name_URL, 
+	values_MOA = {"name_MOA": event_name, "pageURL_MOA": event_URL, 
 				  "tMax_MOA": tMax_JD_values[0], "tMax_err_MOA": tMax_JD_values[1], \
 				  "tE_MOA": tE_values[0], "tE_err_MOA": tE_values[1], \
 				  "u0_MOA": u0_values[0], "u0_err_MOA": u0_values[1], \
