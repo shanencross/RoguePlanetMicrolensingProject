@@ -18,6 +18,7 @@ DEBUGGING_MODE = True
 if DEBUGGING_MODE:
 	error_mailing_list = ["shanencross@gmail.com"]
 else:
+	#error_mailing_list = ["shanencross@gmail.com"]
 	error_mailing_list = ["shanencross@gmail.com", "rstreet@lcogt.net"]
 
 # if already running, return

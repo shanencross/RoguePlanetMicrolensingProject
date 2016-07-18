@@ -247,7 +247,7 @@ def update_TAP_only_event(event):
 
 	# Collect OGLE data if available
 	if event.has_key("name_OGLE") and event["name_OGLE"] != "":
-		logger.debug("Obtaining OGLE data for TAP event...")
+		logger.debug("Obtaining OGLE data for TAP event (%s)..." % event["name_OGLE"])
 		try:
 			event_update_OGLE = event_data_collection.collect_data_OGLE(event["name_OGLE"])
 			event.update(event_update_OGLE)
@@ -257,7 +257,7 @@ def update_TAP_only_event(event):
 			logger.warning(ex)
 			raise
 
-		logger.debug("Obaining ARTEMIS OGLE data for TAP event...")
+		logger.debug("Obaining ARTEMIS OGLE data for TAP event (%s)..." % event["name_OGLE"])
 		try:
 			event_update_ARTEMIS_OGLE = event_data_collection.collect_data_ARTEMIS(event["name_OGLE"])
 			event.update(event_update_ARTEMIS_OGLE)
@@ -281,7 +281,7 @@ def update_TAP_only_event(event):
 
 	# Collect MOA data if available
 	if event.has_key("name_MOA") and event["name_MOA"] != "":
-		logger.debug("Obtaining MOA data for TAP event...")		
+		logger.debug("Obtaining MOA data for TAP event (%s)..." % event["name_MOA"])		
 		try:
 			event_update_MOA = event_data_collection.collect_data_MOA(event["name_MOA"])
 			event.update(event_update_MOA)
@@ -290,7 +290,7 @@ def update_TAP_only_event(event):
 			logger.warning("Exception obtaining MOA data for TAP event.")
 			raise
 
-		logger.debug("Obtaining ARTEMIS MOA data for TAP event...")
+		logger.debug("Obtaining ARTEMIS MOA data for TAP event (%s)..." % event["name_MOA"])
 		try:
 			event_update_ARTEMIS_MOA = event_data_collection.collect_data_ARTEMIS(event["name_MOA"])
 			event.update(event_update_ARTEMIS_MOA)

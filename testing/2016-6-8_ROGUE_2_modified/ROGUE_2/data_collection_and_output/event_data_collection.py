@@ -12,6 +12,7 @@ import logging
 from datetime import datetime
 from bs4 import BeautifulSoup #html parsing
 import csv
+import time
 
 import logger_setup
 #import update_CSV
@@ -171,7 +172,15 @@ def update_year(new_year_OGLE, new_year_MOA):
 def collect_data_OGLE(event_name):
 	name_URL = event_name[10:].lower()
 	event_URL = OGLE_dir + "/" + name_URL + ".html"
-	request = requests.get(event_URL, verify=False)
+	try:
+		#time.sleep(1)
+		#print "event page %s" % event_URL
+		request = requests.get(event_URL, verify=False, timeout=10)
+	except requests.Timeout as ex:
+		#print "timeout %s" % event_URL
+		time.sleep(5)
+		request = requests.get(event_URL, verify=False, timeout=10)
+
 	page = request.content
 	soup = BeautifulSoup(page, 'lxml')
 	tables = soup.find_all("table")
@@ -207,7 +216,7 @@ def collect_data_OGLE(event_name):
 								 "lCurve_OGLE": lCurve_plot_URL, "lCurve_zoomed_OGLE": lCurve_plot_zoomed_URL, \
 								 "RA_OGLE": RA, "Dec_OGLE": Dec}
 
-	logger.debug("OGLE values: " + str(values))
+	#logger.debug("OGLE values: " + str(values))
 	return values
 
 def parse_values_OGLE(columns):
