@@ -1,6 +1,6 @@
 """
 logger_setup.py
-IN-PROGRESS WORKING COPY
+INACTIVE TESTING COPY
 Purpose: Set up logger for webpageAccess.py and buildEventSummary.py
 @author: Shanen Cross
 Date: 2016-04-14

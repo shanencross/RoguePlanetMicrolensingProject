@@ -1,6 +1,6 @@
 """
 ROGUE.py
-IN-USE ACTIVE COPY
+INACTIVE TESTING COPY
 Purpose: Poll MOA (and eventually OGLE) website for microlensing events, checking for ones likely to 
 indicate rogue planets or planets distant from their parent star
 Author: Shanen Cross
@@ -148,10 +148,11 @@ else:
 	EVENT_TABLE_COMPARISON_ON = True
 	#MAILING_LIST = ["shanencross@gmail.com"]
 	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com"]
-	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
-					"yossishv@gmail.com", "robonet-ops@lcogt.net", "david.p.bennett@nasa.gov", \
-					"zhu.908@buckeyemail.osu.edu", "mpenny.astronomy@gmail.com", "radek.poleski@gmail.com", \
-					"batista@iap.fr", "snovati@ipac.caltech.edu", "kjeffk@gmail.com"]
+	#MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "calen.b.henderson@gmail.com", \
+	#				"yossishv@gmail.com", "robonet-ops@lcogt.net", "david.p.bennett@nasa.gov", \
+	#				"zhu.908@buckeyemail.osu.edu", "mpenny.astronomy@gmail.com", "radek.poleski@gmail.com", \
+	#				"batista@iap.fr", "snovati@ipac.caltech.edu", "kjeffk@gmail.com"]
+	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "robonet-ops@lcogt.net", "kjeffk@gmail.com"]
 
 # Global dictionary of event triggers to update .csv file with
 event_trigger_dict = {}

@@ -1,6 +1,6 @@
 """
 event_data_collection.py
-IN-USE ACTIVE COPY
+INACTIVE TESTING COPY
 Author: Shanen Cross
 Date: 2016-03-21
 Purpose: 
