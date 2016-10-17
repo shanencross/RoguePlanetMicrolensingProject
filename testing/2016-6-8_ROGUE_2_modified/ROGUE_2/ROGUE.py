@@ -152,7 +152,7 @@ else:
 	#				"yossishv@gmail.com", "robonet-ops@lcogt.net", "david.p.bennett@nasa.gov", \
 	#				"zhu.908@buckeyemail.osu.edu", "mpenny.astronomy@gmail.com", "radek.poleski@gmail.com", \
 	#				"batista@iap.fr", "snovati@ipac.caltech.edu", "kjeffk@gmail.com"]
-	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lcogt.net", "robonet-ops@lcogt.net", "kjeffk@gmail.com"]
+	MAILING_LIST = ["shanencross@gmail.com", "rstreet@lco.global", "robonet-ops@lco.global", "kjeffk@gmail.com"]
 
 # Global dictionary of event triggers to update .csv file with
 event_trigger_dict = {}
