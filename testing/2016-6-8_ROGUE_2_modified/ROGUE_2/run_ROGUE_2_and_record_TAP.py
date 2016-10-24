@@ -19,7 +19,7 @@ if DEBUGGING_MODE:
 	error_mailing_list = ["shanencross@gmail.com"]
 else:
 	#error_mailing_list = ["shanencross@gmail.com"]
-	error_mailing_list = ["shanencross@gmail.com", "rstreet@lcogt.net"]
+	error_mailing_list = ["shanencross@gmail.com", "rstreet@lco.global"]
 
 # if already running, return
 if os.popen("ps -Af").read().count(__file__) > 1:
